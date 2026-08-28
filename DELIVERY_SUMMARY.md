@@ -1,56 +1,31 @@
-# SentimentIQ improvement pass delivery summary
+# SentimentIQ dashboard and Script analysis delivery summary
 
-## What changed
+## Dashboard status
 
-This pass shifts SentimentIQ from the earlier muted cream/teal treatment to a brighter complementary system built around blue and orange. The visual direction remains analytical and trustworthy, but energy now comes from contrast, clear hierarchy, and provenance cues rather than low-contrast pastels or clutter.
+The deployed app already had a proper dashboard at `/dashboard`; it was not a placeholder. It served as the post-login home view with KPI cards, sentiment distribution, trend area, recent evidence, themes, VADER comparison, quick scope controls, and links into Reports and the explorer. This update completed it against the new requirements by adding source and date-range filters and by making Script analysis output roll into the same metrics and distribution chart.
 
-| Area | Before | After |
-|---|---|---|
-| Image reliability | Generated hero and texture URLs were on the critical rendering path and displayed generation placeholders in the deployed experience. | Those unreliable background image dependencies were removed from the critical path and replaced with deterministic token-driven CSS motifs. The generated brand mark remains available, and the logo now falls back to the CSS three-bar mark if the asset fails. |
-| Color system | The prior palette mixed warm cream, teal, terracotta, and semantic colors without a bright complementary anchor. | Primary blue `#2563EB` and complementary orange `#F97316` now lead the product. Clean cool neutrals preserve readability, while positive/neutral/negative semantics remain visually distinct. |
-| Cross-page consistency | Landing, auth, dashboard, upload, explorer, reports, settings, and empty states were visually related but not fully unified. | All visible pages share the same primary/accent tokens, typography, input styling, report rules, active navigation treatment, signal motifs, and semantic badges. |
-| Brand motif | The signal motif was subtle and mostly confined to the brand area. | The three-bar signal mark now appears in the logo/fallback, active nav states, chart and empty-state graphics, report summaries, and upload guidance. |
-| Reports | A real-data bar graph existed, but the surrounding palette and empty-state treatment were muted. | The responsive Positive / Neutral / Negative bar chart now uses the new semantic colors and remains wired to the shared filtered review collection, with visible values, axis labels, tooltips, and a real-data empty state. |
+## What was added
 
-## Image handling
+| Capability | Implementation |
+|---|---|
+| Script / transcript route | Added a first-class `/analysis` workspace view and sidebar item between Upload data and Reviews explorer. |
+| Paste input | Added a raw-text textarea with analysis name and source label fields. |
+| File input | Added TXT and CSV upload support using browser `FileReader`; the content is loaded into the same analysis form. |
+| Overall classification | Added a transparent local keyword model that returns a signed score from -100 to +100 and Positive, Neutral, or Negative classification. |
+| Segment analysis | Splits content on speaker/newline turns and sentence boundaries, then tags each segment with the same semantic sentiment labels. |
+| Evidence highlights | Shows positive and negative evidence segments under “What drove the label,” with semantic color treatment. |
+| Shared workspace roll-up | Analysis segments are appended to the shared review collection and persisted to `localStorage`, so Dashboard KPIs, recent evidence, filters, Reports distribution, and product lens all see them. |
+| Navigation | Added direct movement between Dashboard, Script analysis, and Reports, including an “Open reports” action from the latest analysis result. |
+| Dashboard filters | Added From, To, Source, Sentiment, Product, and Reset controls. Active filter chips are mirrored in Reports. |
 
-The deployed audit showed that the generated hero and report texture assets were rendering placeholder-generation content. They have been replaced with CSS-built background motifs so the page no longer depends on asynchronous generated backgrounds. The remaining generated brand mark is used in the header and favicon with descriptive alt text and a graceful CSS signal-mark fallback through `onError`. The final local preview screenshots for landing, dashboard, reports, and upload show no broken or placeholder image rendering.
+## Verification
 
-## Reports data wiring
+The Dashboard was tested after a representative transcript analysis. Five transcript segments appeared in the shared workspace; Dashboard showed five reviews in view, populated movement bars, a 40% negative share, and a Positive 2 / Neutral 1 / Negative 2 distribution. Recent evidence displayed the transcript segments with their source label. Reports then displayed the same 5-review scope and the same 40% positive sentiment share breakdown.
 
-The chart derives from the same `filteredReviews` collection used by the dashboard and Reports scope. CSV import parses source rows in the browser, persists them to `localStorage`, and routes to Reports. Bar counts are computed from each imported row’s `sentiment` field; the tooltip computes the percentage from the selected collection. No fabricated customer reviews, ratings, or chart counts are seeded. With no imported rows, Reports intentionally shows a clear empty state instead of placeholder values.
+The Script analysis route was also tested in its empty state and with a populated transcript. The populated result preserved speaker turns and sentence boundaries, produced an overall Neutral score, tagged five segments, and displayed positive and negative evidence lists. Mobile screenshots confirmed the new analysis form, guide panel, dashboard filters, and Reports surfaces stack cleanly at a narrow viewport.
 
-## Bright complementary color tokens
+## Scope and limitations
 
-| Token | Hex | Intended use |
-|---|---:|---|
-| `--paper` | `#F6F8FB` | Bright workspace and landing base |
-| `--paper-deep` | `#E8EEF5` | Secondary controls and soft separators |
-| `--surface` | `#FFFFFF` | Cards, forms, and report surfaces |
-| `--surface-tint` | `#F9FBFD` | Inset surfaces and filter controls |
-| `--ink` | `#112A46` | Headings, primary text, and navigation anchor |
-| `--ink-soft` | `#27486B` | Secondary dark text and metadata |
-| `--muted-ink` | `#53657A` | Body copy, helper text, and chart labels |
-| `--faint-ink` | `#7B8A9B` | Low-priority metadata |
-| `--line` | `#D8E2EE` | Hairline rules and borders |
-| `--line-strong` | `#B9CBE0` | Emphasized input and control borders |
-| `--primary` | `#2563EB` | Bright primary action, active nav, key analytical emphasis |
-| `--primary-deep` | `#1D4ED8` | Hover states and text on primary-soft surfaces |
-| `--primary-soft` | `#DBEAFE` | Active navigation, info states, and primary-tinted surfaces |
-| `--accent` | `#F97316` | Complementary annotation and provenance moments |
-| `--accent-deep` | `#9A3412` | Accent text on light surfaces |
-| `--accent-soft` | `#FFEDD5` | Accent badge and annotation backgrounds |
-| `--positive` | `#16A34A` | Positive chart bar and positive indicator |
-| `--positive-deep` | `#166534` | Positive badge text |
-| `--positive-soft` | `#DCFCE7` | Positive badge background |
-| `--neutral` | `#D97706` | Neutral chart bar and neutral indicator |
-| `--neutral-deep` | `#92400E` | Neutral badge text |
-| `--neutral-soft` | `#FEF3C7` | Neutral badge background |
-| `--negative` | `#DC2626` | Negative chart bar and negative indicator |
-| `--negative-deep` | `#991B1B` | Negative badge text |
-| `--negative-soft` | `#FEE2E2` | Negative badge background |
-| `--grid` | `#E5ECF4` | Chart grid lines and analytical guides |
+This implementation is intentionally frontend-only and uses a transparent local keyword model rather than a hosted LLM or backend inference service. The current TXT/CSV reader treats the uploaded file as text; CSV content can therefore be analyzed as raw content, while structured review CSV ingestion continues through the existing Upload data flow. User-authenticated storage, production-grade model scoring, and long-term transcript history would require a backend feature.
 
-## Validation
-
-The frontend passed `pnpm check` and the production `pnpm build`. The build has only the existing bundle-size advisory from the scaffold. Desktop screenshots were captured for landing, dashboard, reports, and upload after the asset repair; the visuals show no generation placeholder backgrounds. The chart empty state, shared navigation, and CSV/localStorage wiring remain in place for real imported data.
+The project passed TypeScript checks and a production build. The build retains the scaffold’s existing bundle-size advisory; no compilation errors remain.

@@ -12,6 +12,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/dashboard" component={Home} />
       <Route path="/upload" component={Home} />
+      <Route path="/analysis" component={Home} />
       <Route path="/reviews" component={Home} />
       <Route path="/reports" component={Home} />
       <Route path="/settings" component={Home} />

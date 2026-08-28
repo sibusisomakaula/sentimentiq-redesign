@@ -540,3 +540,57 @@ button:active { transform: scale(0.97); }
 @media (max-width: 520px) {
   .upload-intro-side { display: flex; align-items: center; justify-content: space-between; margin-top: 15px; }
 }
+
+/* Script / transcript analysis: the same bright report-instrument language, with evidence-first density. */
+.analysis-layout { display: grid; grid-template-columns: 1.28fr .72fr; gap: 14px; margin-bottom: 22px; }
+.analysis-input-card, .analysis-guide { padding: clamp(20px, 3vw, 34px); }
+.analysis-input-card h2, .analysis-guide h2, .analysis-results h2 { margin: 8px 0 6px; color: var(--ink); font: 600 28px/1 "Space Grotesk", sans-serif; letter-spacing: -0.06em; }
+.analysis-input-card p, .analysis-guide p, .analysis-results p { color: var(--muted-ink); font-size: 12px; line-height: 1.55; }
+.analysis-form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 24px; }
+.analysis-form label, .analysis-textarea-label { display: grid; gap: 7px; color: var(--muted-ink); font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.analysis-form input, .analysis-textarea-label textarea { width: 100%; border: 1px solid var(--line); background: var(--surface-tint); color: var(--ink); font: inherit; letter-spacing: normal; text-transform: none; outline: none; }
+.analysis-form input { height: 40px; border-radius: 7px; padding: 0 12px; }
+.analysis-textarea-label { margin-top: 16px; }
+.analysis-textarea-label textarea { min-height: 190px; resize: vertical; border-radius: 8px; padding: 14px; line-height: 1.65; }
+.analysis-textarea-label textarea:focus, .analysis-form input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+.analysis-textarea-label > span { color: var(--faint-ink); font-size: 10px; font-weight: 500; letter-spacing: normal; text-transform: none; }
+.analysis-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 15px; }
+.file-button { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line-strong); border-radius: 7px; padding: 10px 13px; color: var(--ink-soft); font-size: 11px; font-weight: 700; cursor: pointer; }
+.file-button input { display: none; }
+.analysis-guide { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.analysis-guide h2 { color: var(--paper); }
+.analysis-guide .eyebrow { color: var(--primary-soft); }
+.analysis-guide-step { display: flex; gap: 13px; margin-top: 27px; }
+.analysis-guide-step > span { color: var(--accent); font: 700 10px "DM Sans", sans-serif; }
+.analysis-guide-step strong { display: block; color: var(--paper); font-size: 12px; }
+.analysis-guide-step p { margin-top: 4px; color: color-mix(in srgb, var(--paper) 66%, transparent); font-size: 10px; }
+.analysis-schema { display: flex; gap: 8px; margin-top: 28px; padding-top: 16px; border-top: 1px solid color-mix(in srgb, var(--paper) 18%, transparent); color: color-mix(in srgb, var(--paper) 68%, transparent); font-size: 10px; line-height: 1.5; }
+.analysis-results-heading { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin: 8px 0 14px; }
+.analysis-results-heading h2 { margin-top: 5px; }
+.analysis-result-grid { display: grid; grid-template-columns: .65fr 1.15fr .9fr; gap: 14px; }
+.analysis-score-card, .segment-card, .evidence-card { padding: 22px; }
+.analysis-score-card > p { margin-top: 17px; }
+.analysis-score { display: inline-flex; align-items: baseline; gap: 9px; padding: 10px 14px; border-left: 3px solid var(--primary); background: var(--primary-soft); color: var(--primary-deep); }
+.analysis-score strong { font: 700 42px/1 "Space Grotesk", sans-serif; letter-spacing: -.07em; }
+.analysis-score span { font-size: 11px; font-weight: 700; }
+.analysis-score--positive { border-color: var(--positive); background: var(--positive-soft); color: var(--positive-deep); }
+.analysis-score--negative { border-color: var(--negative); background: var(--negative-soft); color: var(--negative-deep); }
+.analysis-score--neutral { border-color: var(--neutral); background: var(--neutral-soft); color: var(--neutral-deep); }
+.analysis-mini-bar { height: 6px; margin-top: 17px; background: var(--paper-deep); }
+.analysis-mini-bar i { display: block; height: 100%; background: var(--primary); }
+.analysis-score-card small { display: block; margin-top: 8px; color: var(--faint-ink); font-size: 10px; }
+.segment-list { display: grid; gap: 10px; margin-top: 19px; max-height: 360px; overflow: auto; }
+.segment-row { display: grid; grid-template-columns: 7px 1fr; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); }
+.segment-row > div { display: grid; gap: 5px; }
+.segment-row > div > span { color: var(--ink-soft); font-size: 11px; line-height: 1.5; }
+.segment-row small { color: var(--faint-ink); font-size: 9px; }
+.sentiment-dot { width: 7px; height: 7px; border-radius: 50%; margin-top: 4px; background: var(--faint-ink); }
+.sentiment-dot--positive { background: var(--positive); }.sentiment-dot--neutral { background: var(--neutral); }.sentiment-dot--negative { background: var(--negative); }
+.phrase-group { display: grid; gap: 8px; margin-top: 19px; }
+.phrase-label { font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.phrase-label--positive { color: var(--positive-deep); }.phrase-label--negative { color: var(--negative-deep); }
+.phrase { display: flex; gap: 7px; margin: 0; padding: 9px 10px; border-left: 2px solid; background: var(--surface-tint); font-size: 11px; line-height: 1.45; }
+.phrase--positive { border-color: var(--positive); color: var(--positive-deep); }.phrase--negative { border-color: var(--negative); color: var(--negative-deep); }
+.phrase-empty { margin: 0; color: var(--faint-ink); font-size: 11px; }
+@media (max-width: 980px) { .analysis-layout, .analysis-result-grid { grid-template-columns: 1fr; } .analysis-guide { min-height: 0; } }
+@media (max-width: 520px) { .analysis-form { grid-template-columns: 1fr; } .analysis-actions, .analysis-results-heading { align-items: stretch; flex-direction: column; } .analysis-actions .button, .file-button { justify-content: center; } }

@@ -59,11 +59,23 @@ interface Review {
   source: string;
 }
 
-type ViewKey = "dashboard" | "upload" | "reviews" | "reports" | "settings";
+interface AnalysisSummary {
+  id: string;
+  title: string;
+  source: string;
+  score: number;
+  sentiment: Review["sentiment"];
+  segments: Review[];
+  positivePhrases: string[];
+  negativePhrases: string[];
+}
+
+type ViewKey = "dashboard" | "upload" | "analysis" | "reviews" | "reports" | "settings";
 
 const navItems: Array<{ key: ViewKey; label: string; icon: typeof LayoutDashboard; path: string }> = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
   { key: "upload", label: "Upload data", icon: CloudUpload, path: "/upload" },
+  { key: "analysis", label: "Script analysis", icon: FileText, path: "/analysis" },
   { key: "reviews", label: "Reviews explorer", icon: Search, path: "/reviews" },
   { key: "reports", label: "Reports", icon: BarChart3, path: "/reports" },
   { key: "settings", label: "Admin settings", icon: Settings2, path: "/settings" },
@@ -76,6 +88,30 @@ const sentimentMeta = {
 } as const;
 
 const initialReviews: Review[] = [];
+const positiveWords = ["love", "great", "good", "helpful", "easy", "excellent", "happy", "resolved", "thank", "thanks", "fast", "recommend", "smooth", "clear", "improve"];
+const negativeWords = ["bad", "poor", "slow", "difficult", "broken", "angry", "frustrated", "issue", "problem", "late", "delay", "worst", "hate", "never", "disappointed", "confusing"];
+
+function classifyText(text: string): { sentiment: Review["sentiment"]; score: number; phrases: string[] } {
+  const normalized = text.toLowerCase();
+  const positiveHits = positiveWords.filter((word) => normalized.includes(word)).length;
+  const negativeHits = negativeWords.filter((word) => normalized.includes(word)).length;
+  const score = Math.max(-100, Math.min(100, Math.round(((positiveHits - negativeHits) / Math.max(1, positiveHits + negativeHits)) * 100)));
+  const sentiment: Review["sentiment"] = score >= 18 ? "Positive" : score <= -18 ? "Negative" : "Neutral";
+  const matched = [...positiveWords, ...negativeWords].filter((word) => normalized.includes(word));
+  return { sentiment, score, phrases: matched.slice(0, 4) };
+}
+
+function analyzeScriptText(text: string, title: string, source: string): AnalysisSummary {
+  const rawSegments = text.split(/\n+|(?<=[.!?])\s+(?=[A-Z])/).map((segment) => segment.trim()).filter(Boolean);
+  const segments = (rawSegments.length ? rawSegments : [text.trim()]).map((segment, index) => {
+    const result = classifyText(segment);
+    return { id: `${source}-${index}-${Date.now()}`, text: segment, sentiment: result.sentiment, rating: null, product: title, createdAt: new Date().toISOString().slice(0, 10), source };
+  });
+  const overall = classifyText(text);
+  const positivePhrases = segments.filter((segment) => segment.sentiment === "Positive").slice(0, 3).map((segment) => segment.text);
+  const negativePhrases = segments.filter((segment) => segment.sentiment === "Negative").slice(0, 3).map((segment) => segment.text);
+  return { id: `${title}-${Date.now()}`, title, source, score: overall.score, sentiment: overall.sentiment, segments, positivePhrases, negativePhrases };
+}
 
 function parseCsv(text: string, source: string): Review[] {
   const lines = text.split(/\r?\n/).filter((line) => line.trim());
@@ -106,6 +142,7 @@ function parseCsv(text: string, source: string): Review[] {
 
 function getView(location: string): ViewKey {
   if (location.includes("upload")) return "upload";
+  if (location.includes("analysis")) return "analysis";
   if (location.includes("reviews")) return "reviews";
   if (location.includes("reports")) return "reports";
   if (location.includes("settings")) return "settings";
@@ -153,14 +190,18 @@ function MetricCard({ label, value, note, tone, icon: Icon }: { label: string; v
   );
 }
 
-function ScopeBar({ filters, setFilters, products }: { filters: { product: string; sentiment: string; rating: string }; setFilters: (next: { product: string; sentiment: string; rating: string }) => void; products: string[] }) {
+type ScopeFilters = { product: string; source: string; sentiment: string; rating: string; from: string; to: string };
+
+function ScopeBar({ filters, setFilters, products, sources }: { filters: ScopeFilters; setFilters: (next: ScopeFilters) => void; products: string[]; sources: string[] }) {
   return (
     <div className="scope-bar">
       <div className="scope-bar__label"><Filter size={14} />Scope</div>
-      <label><span>Product</span><select value={filters.product} onChange={(event) => setFilters({ ...filters, product: event.target.value })}><option>All products</option>{products.map((product) => <option key={product}>{product}</option>)}</select></label>
-      <label><span>Rating</span><select value={filters.rating} onChange={(event) => setFilters({ ...filters, rating: event.target.value })}><option>All ratings</option><option value="5">5 stars</option><option value="4">4 stars</option><option value="3">3 stars</option><option value="2">2 stars</option><option value="1">1 star</option></select></label>
+      <label><span>From</span><input type="date" value={filters.from} onChange={(event) => setFilters({ ...filters, from: event.target.value })} /></label>
+      <label><span>To</span><input type="date" value={filters.to} onChange={(event) => setFilters({ ...filters, to: event.target.value })} /></label>
+      <label><span>Source</span><select value={filters.source} onChange={(event) => setFilters({ ...filters, source: event.target.value })}><option>All sources</option>{sources.map((source) => <option key={source}>{source}</option>)}</select></label>
       <label><span>Sentiment</span><select value={filters.sentiment} onChange={(event) => setFilters({ ...filters, sentiment: event.target.value })}><option>All sentiment</option><option>Positive</option><option>Neutral</option><option>Negative</option></select></label>
-      <button className="scope-reset" onClick={() => setFilters({ product: "All products", sentiment: "All sentiment", rating: "All ratings" })}>Reset</button>
+      <label><span>Product</span><select value={filters.product} onChange={(event) => setFilters({ ...filters, product: event.target.value })}><option>All products</option>{products.map((product) => <option key={product}>{product}</option>)}</select></label>
+      <button className="scope-reset" onClick={() => setFilters({ product: "All products", source: "All sources", sentiment: "All sentiment", rating: "All ratings", from: "", to: "" })}>Reset</button>
     </div>
   );
 }
@@ -263,19 +304,37 @@ function Topbar({ onImport, onNavigate }: { onImport: () => void; onNavigate: (p
   return <header className="topbar"><button className="mobile-menu icon-button" aria-label="Open navigation" onClick={() => toast("Use the section tabs below on small screens.")}><Menu size={18} /></button><div className="breadcrumbs"><span>Workspace</span><ChevronRight size={13} /><strong>Live view</strong></div><div className="topbar__actions"><label className="signal-search"><Search size={15} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ask the signal…" /><kbd>⌘ K</kbd></label><button className="icon-button notification" aria-label="Notifications" onClick={() => toast("No new workspace alerts.")}><Bell size={17} /><i /></button><button className="button button--primary button--compact" onClick={onImport}><Plus size={15} />Import</button><button className="icon-button topbar-theme" aria-label="Switch to dark mode" onClick={() => toast("Theme controls are ready for the next release.")}><Sparkles size={16} /></button></div></header>;
 }
 
-function Dashboard({ reviews, filteredReviews, products, filters, setFilters, onImport, onNavigate }: { reviews: Review[]; filteredReviews: Review[]; products: string[]; filters: { product: string; sentiment: string; rating: string }; setFilters: (next: { product: string; sentiment: string; rating: string }) => void; onImport: () => void; onNavigate: (path: string) => void }) {
+function Dashboard({ reviews, filteredReviews, products, sources, filters, setFilters, onImport, onNavigate }: { reviews: Review[]; filteredReviews: Review[]; products: string[]; sources: string[]; filters: ScopeFilters; setFilters: (next: ScopeFilters) => void; onImport: () => void; onNavigate: (path: string) => void }) {
   const positiveShare = filteredReviews.length ? Math.round(filteredReviews.filter((review) => review.sentiment === "Positive").length / filteredReviews.length * 100) : null;
   const negativeShare = filteredReviews.length ? Math.round(filteredReviews.filter((review) => review.sentiment === "Negative").length / filteredReviews.length * 100) : null;
   const avgRating = filteredReviews.filter((review) => review.rating).length ? (filteredReviews.reduce((sum, review) => sum + (review.rating ?? 0), 0) / filteredReviews.filter((review) => review.rating).length).toFixed(1) : null;
   return <>
     <PageHeader eyebrow="Workspace / Overview" title="Read the signal before it becomes a problem." description="A clear operating view of how customers are feeling across the feedback you have imported." action={<button className="button button--primary" onClick={onImport}><Upload size={16} />Import feedback</button>} />
-    <ScopeBar filters={filters} setFilters={setFilters} products={products} />
+    <ScopeBar filters={filters} setFilters={setFilters} products={products} sources={sources} />
     <section className="section-intro"><div><Eyebrow>{reviews.length ? "Active signal" : "Ready for your first signal"}</Eyebrow><h2>Customer sentiment, in context.</h2><p>{reviews.length ? `Viewing ${filteredReviews.length} imported reviews in the current scope.` : "Your workspace is ready. Import a review file to activate analytics without losing the source context."}</p></div><button className="text-action" onClick={() => onNavigate("/reports")}>Open reports <ChevronRight size={14} /></button></section>
     <div className="metric-grid"><MetricCard label="Satisfaction score" value={avgRating ? `${avgRating}/5` : "—"} note={avgRating ? "Average imported rating" : "Calculated after import"} tone="teal" icon={Gauge} /><MetricCard label="Reviews in view" value={`${filteredReviews.length}`} note={reviews.length ? "Filtered source rows" : "No source connected yet"} tone="ink" icon={Database} /><MetricCard label="Average rating" value={avgRating ?? "—"} note={avgRating ? "From rating fields" : "Waiting for rating fields"} tone="amber" icon={Activity} /><MetricCard label="Negative share" value={negativeShare === null ? "—" : `${negativeShare}%`} note={negativeShare === null ? "No negative signal yet" : "Of selected scope"} tone="coral" icon={ArrowDownRight} /></div>
     <div className="dashboard-grid"><article className="card trend-card"><div className="card-heading"><div><Eyebrow>Movement</Eyebrow><h2>Sentiment trend</h2><p>Daily review volume in the active scope</p></div><StatusPill tone={filteredReviews.length ? "teal" : "ink"}>{filteredReviews.length ? "Imported" : "No timeline yet"}</StatusPill></div>{filteredReviews.length ? <div className="mini-bars">{Array.from({ length: 14 }, (_, index) => <span key={index} style={{ height: `${18 + ((index * 17) % 66)}%` }} />)}</div> : <div className="quiet-empty"><Activity size={24} /><strong>No trend to draw yet</strong><span>Charts will appear once reviews are imported.</span></div>}</article><DistributionCard reviews={filteredReviews} onImport={onImport} title="Overall sentiment" /></div>
     <div className="dashboard-grid dashboard-grid--secondary"><article className="card compact-card"><div className="card-heading"><div><Eyebrow>Language</Eyebrow><h2>What customers mention</h2></div><Tag size={16} /></div><div className="word-placeholder"><span>themes</span><span>shipping</span><span>quality</span><span>support</span></div><p className="muted-note">Import text-rich reviews to see recurring language.</p></article><article className="card compact-card"><div className="card-heading"><div><Eyebrow>Evidence</Eyebrow><h2>Recent reviews</h2></div><button className="text-action" onClick={() => onNavigate("/reviews")}>View explorer <ChevronRight size={14} /></button></div>{filteredReviews.length ? <div className="evidence-list">{filteredReviews.slice(0, 3).map((review) => <div className="evidence-row" key={review.id}><span className={`sentiment-dot sentiment-dot--${review.sentiment.toLowerCase()}`} /><div><strong>{review.product}</strong><span>{review.text || "Imported feedback row"}</span></div><small>{review.createdAt}</small></div>)}</div> : <div className="quiet-empty quiet-empty--small"><FileText size={22} /><strong>No evidence in the workspace</strong><span>The latest imported rows will appear here.</span></div>}</article><article className="card compact-card"><div className="card-heading"><div><Eyebrow>Model cross-check</Eyebrow><h2>VADER comparison</h2></div><BookOpen size={16} /></div><div className="comparison-row"><span>Primary label</span><span>VADER</span><span>Agreement</span></div><div className="comparison-score">{reviews.length ? <><strong>{Math.max(0, reviews.length - 1)}/{reviews.length}</strong><span>rows aligned</span></> : <><strong>Waiting</strong><span>Appears after import</span></>}</div><p className="muted-note">Every imported row receives a second lexicon-based polarity score.</p></article></div>
     {positiveShare !== null && <div className="insight-strip"><Sparkles size={16} /><span><strong>{positiveShare}% positive signal</strong> in the active scope. Use Reports to package this view for the next product conversation.</span></div>}
   </>;
+}
+
+function ScriptAnalysis({ lastAnalysis, onAnalyze, onNavigate }: { lastAnalysis: AnalysisSummary | null; onAnalyze: (text: string, title: string, source: string) => void; onNavigate: (path: string) => void }) {
+  const [text, setText] = useState("");
+  const [title, setTitle] = useState("Untitled analysis");
+  const [source, setSource] = useState("Pasted script");
+  const [fileName, setFileName] = useState("");
+  const handleFile = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setFileName(file.name);
+    setSource(file.name);
+    if (!title || title === "Untitled analysis") setTitle(file.name.replace(/\.[^.]+$/, ""));
+    const reader = new FileReader();
+    reader.onload = () => setText(String(reader.result || ""));
+    reader.readAsText(file);
+  };
+  return <><PageHeader eyebrow="Workspace / Intelligence" title="Read the conversation beneath the words." description="Paste a script, call transcript, chat log, or review file and keep its sentiment signal connected to the workspace." action={<StatusPill tone="teal">Local analysis</StatusPill>} /><section className="analysis-layout"><article className="card analysis-input-card"><div className="card-heading"><div><Eyebrow>Script / transcript analysis</Eyebrow><h2>Bring the raw language in.</h2><p>Segments split by speaker turns or sentences receive a transparent local sentiment label.</p></div><FileText size={17} /></div><div className="analysis-form"><label>Analysis name<input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Q3 support call" /></label><label>Source label<input value={source} onChange={(event) => setSource(event.target.value)} placeholder="Pasted script" /></label></div><label className="analysis-textarea-label">Raw text<textarea value={text} onChange={(event) => setText(event.target.value)} placeholder={'Agent: Thanks for calling. I am happy to help.\nCustomer: The delivery was late and the setup was confusing.'} /><span>{text.length.toLocaleString()} characters · plain text or CSV content</span></label><div className="analysis-actions"><label className="file-button"><input type="file" accept=".txt,.csv,text/plain,text/csv" onChange={handleFile} /><CloudUpload size={15} />{fileName ? "Replace file" : "Upload TXT / CSV"}</label><button className="button button--primary" onClick={() => { if (!text.trim()) { toast.error("Paste or upload text before analyzing."); return; } onAnalyze(text, title || "Untitled analysis", source || "Pasted script"); }}><Sparkles size={15} />Analyze sentiment</button></div></article><aside className="card analysis-guide"><Eyebrow>How it connects</Eyebrow><h2>One signal, three views.</h2><div className="analysis-guide-step"><span>01</span><div><strong>Overall score</strong><p>A single classification and signed score summarize the full text.</p></div></div><div className="analysis-guide-step"><span>02</span><div><strong>Segment evidence</strong><p>Speaker turns and sentences stay visible with their own sentiment tags.</p></div></div><div className="analysis-guide-step"><span>03</span><div><strong>Workspace roll-up</strong><p>Analyzed segments become source rows in Dashboard and Reports.</p></div></div><div className="analysis-schema"><Tag size={15} /><span>Positive, neutral, and negative use the existing semantic token set.</span></div></aside></section>{lastAnalysis && <section className="analysis-results"><div className="analysis-results-heading"><div><Eyebrow>Latest analysis</Eyebrow><h2>{lastAnalysis.title}</h2><p>{lastAnalysis.source} · {lastAnalysis.segments.length} segments added to the workspace</p></div><button className="text-action" onClick={() => onNavigate("/reports")}>Open reports <ChevronRight size={14} /></button></div><div className="analysis-result-grid"><article className="card analysis-score-card"><div className={`analysis-score analysis-score--${lastAnalysis.sentiment.toLowerCase()}`}><strong>{lastAnalysis.score > 0 ? "+" : ""}{lastAnalysis.score}</strong><span>{lastAnalysis.sentiment}</span></div><p>Overall sentiment score</p><div className="analysis-mini-bar"><i style={{ width: `${Math.max(4, Math.abs(lastAnalysis.score))}%` }} /></div><small>Signed score from -100 to +100</small></article><article className="card segment-card"><div className="card-heading"><div><Eyebrow>Segment view</Eyebrow><h2>Line-by-line signal</h2></div><StatusPill tone="ink">{lastAnalysis.segments.length} tagged</StatusPill></div><div className="segment-list">{lastAnalysis.segments.map((segment) => <div className="segment-row" key={segment.id}><span className={`sentiment-dot sentiment-dot--${segment.sentiment.toLowerCase()}`} /><div><span>{segment.text}</span><small>{segment.sentiment} · {segment.source}</small></div></div>)}</div></article><article className="card evidence-card"><div className="card-heading"><div><Eyebrow>Key phrases</Eyebrow><h2>What drove the label</h2></div><Lightbulb size={16} /></div><div className="phrase-group"><span className="phrase-label phrase-label--positive">Positive evidence</span>{lastAnalysis.positivePhrases.length ? lastAnalysis.positivePhrases.map((phrase) => <p className="phrase phrase--positive" key={phrase}><ArrowUpRight size={13} />{phrase}</p>) : <p className="phrase-empty">No strong positive phrase detected.</p>}</div><div className="phrase-group"><span className="phrase-label phrase-label--negative">Negative evidence</span>{lastAnalysis.negativePhrases.length ? lastAnalysis.negativePhrases.map((phrase) => <p className="phrase phrase--negative" key={phrase}><ArrowDownRight size={13} />{phrase}</p>) : <p className="phrase-empty">No strong negative phrase detected.</p>}</div></article></div></section>}</>;
 }
 
 function UploadPage({ onFile }: { onFile: (event: ChangeEvent<HTMLInputElement>) => void }) {
@@ -288,8 +347,8 @@ function ReviewsPage({ reviews, filteredReviews, search, setSearch, onNavigate }
   return <><PageHeader eyebrow="Workspace / QA" title="Trace every conclusion back to the evidence." description="Search, inspect, and correct sentiment labels where human judgment should lead." action={<StatusPill tone={reviews.length ? "teal" : "ink"}>{reviews.length} total</StatusPill>} /><article className="card explorer-card"><div className="explorer-toolbar"><label className="table-search"><Search size={15} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search review text, product, or customer" /></label><select value={sentiment} onChange={(event) => setSentiment(event.target.value)}><option>All sentiment</option><option>Positive</option><option>Neutral</option><option>Negative</option></select><select defaultValue="Newest first"><option>Newest first</option><option>Highest rating</option><option>Highest confidence</option></select><button className="toggle-control" onClick={() => toast("VADER disagreement filter is ready when imported comparison scores are available.")}><span />VADER disagreement</button><button className="button button--secondary" onClick={() => toast("Export is available after importing source rows.")}><Download size={15} />Export results</button></div>{scoped.length ? <div className="review-table"><div className="review-table__head"><span>Source evidence</span><span>Product</span><span>Label</span><span>Rating</span><span>Imported</span></div>{scoped.map((review) => <div className="review-table__row" key={review.id}><div><strong>{review.text || "Imported feedback row"}</strong><small>{review.source}</small></div><span>{review.product}</span><StatusPill tone={review.sentiment === "Positive" ? "teal" : review.sentiment === "Negative" ? "coral" : "amber"}>{review.sentiment}</StatusPill><span>{review.rating ? `${review.rating}/5` : "—"}</span><span>{review.createdAt}</span></div>)}</div> : <div className="table-empty"><div className="chart-empty__bars" aria-hidden="true"><span /><span /><span /></div><strong>{reviews.length ? "No rows match this search" : "No reviews imported yet"}</strong><p>{reviews.length ? "Try a broader search or reset the filters." : "Use Upload data to bring a CSV into the workspace."}</p>{!reviews.length && <button className="text-action" onClick={() => onNavigate("/upload")}>Go to Upload data <ChevronRight size={14} /></button>}</div>}<div className="table-footer"><span>{scoped.length} rows in view</span><span>1 / 1 <button className="icon-button" aria-label="Next page"><ChevronRight size={15} /></button></span></div></article></>;
 }
 
-function ReportsPage({ filteredReviews, filters, onImport }: { filteredReviews: Review[]; filters: { product: string; sentiment: string; rating: string }; onImport: () => void }) {
-  return <><PageHeader eyebrow="Workspace / Output" title="Turn the current view into a useful brief." description="Export a filtered snapshot for product, support, and growth conversations." action={<button className="button button--secondary" onClick={() => toast("Export is available after importing source rows.")}><Download size={15} />Export CSV</button>} /><div className="report-context"><span><Grid2X2 size={14} />Current scope</span><strong>{filteredReviews.length} reviews</strong><span>{filters.product}</span><span>{filters.sentiment}</span><span>{filters.rating}</span></div><div className="report-grid"><article className="card executive-card"><div className="card-heading"><div><Eyebrow>Executive summary</Eyebrow><h2>The numbers behind the narrative</h2><p>This report mirrors the current dashboard scope.</p></div><div className="signal-stamp" aria-hidden="true"><i /><i /><i /></div></div><div className="executive-score"><strong>{filteredReviews.length ? `${Math.round(filteredReviews.filter((review) => review.sentiment === "Positive").length / filteredReviews.length * 100)}%` : "—"}</strong><span>positive sentiment share</span></div><div className="executive-breakdown">{(["Positive", "Neutral", "Negative"] as const).map((sentiment) => <div key={sentiment}><span className={`sentiment-dot sentiment-dot--${sentiment.toLowerCase()}`} />{sentiment}<strong>{filteredReviews.filter((review) => review.sentiment === sentiment).length || "—"}</strong></div>)}</div><div className="report-note"><ShieldCheck size={15} />CSV export includes review-level evidence, sentiment labels, confidence, themes, and source file.</div></article><DistributionCard reviews={filteredReviews} onImport={onImport} /></div><article className="card product-lens"><div className="card-heading"><div><Eyebrow>Product lens</Eyebrow><h2>Products in scope</h2><p>Sorted by review volume from the active source rows.</p></div><Tag size={17} /></div>{filteredReviews.length ? <div className="product-rows">{Array.from(new Set(filteredReviews.map((review) => review.product))).slice(0, 5).map((product) => { const count = filteredReviews.filter((review) => review.product === product).length; return <div className="product-row" key={product}><span>{product}</span><div><i style={{ width: `${Math.max(12, count / filteredReviews.length * 100)}%` }} /></div><strong>{count}</strong></div>; })}</div> : <div className="quiet-empty quiet-empty--horizontal"><Grid2X2 size={22} /><strong>No product breakdown yet</strong><span>Import reviews to make a product brief.</span></div>}</article></>;
+function ReportsPage({ filteredReviews, filters, onImport }: { filteredReviews: Review[]; filters: ScopeFilters; onImport: () => void }) {
+  return <><PageHeader eyebrow="Workspace / Output" title="Turn the current view into a useful brief." description="Export a filtered snapshot for product, support, and growth conversations." action={<button className="button button--secondary" onClick={() => toast("Export is available after importing source rows.")}><Download size={15} />Export CSV</button>} /><div className="report-context"><span><Grid2X2 size={14} />Current scope</span><strong>{filteredReviews.length} reviews</strong><span>{filters.product}</span><span>{filters.source}</span><span>{filters.sentiment}</span><span>{filters.rating}</span>{filters.from && <span>From {filters.from}</span>}{filters.to && <span>To {filters.to}</span>}</div><div className="report-grid"><article className="card executive-card"><div className="card-heading"><div><Eyebrow>Executive summary</Eyebrow><h2>The numbers behind the narrative</h2><p>This report mirrors the current dashboard scope.</p></div><div className="signal-stamp" aria-hidden="true"><i /><i /><i /></div></div><div className="executive-score"><strong>{filteredReviews.length ? `${Math.round(filteredReviews.filter((review) => review.sentiment === "Positive").length / filteredReviews.length * 100)}%` : "—"}</strong><span>positive sentiment share</span></div><div className="executive-breakdown">{(["Positive", "Neutral", "Negative"] as const).map((sentiment) => <div key={sentiment}><span className={`sentiment-dot sentiment-dot--${sentiment.toLowerCase()}`} />{sentiment}<strong>{filteredReviews.filter((review) => review.sentiment === sentiment).length || "—"}</strong></div>)}</div><div className="report-note"><ShieldCheck size={15} />CSV export includes review-level evidence, sentiment labels, confidence, themes, and source file.</div></article><DistributionCard reviews={filteredReviews} onImport={onImport} /></div><article className="card product-lens"><div className="card-heading"><div><Eyebrow>Product lens</Eyebrow><h2>Products in scope</h2><p>Sorted by review volume from the active source rows.</p></div><Tag size={17} /></div>{filteredReviews.length ? <div className="product-rows">{Array.from(new Set(filteredReviews.map((review) => review.product))).slice(0, 5).map((product) => { const count = filteredReviews.filter((review) => review.product === product).length; return <div className="product-row" key={product}><span>{product}</span><div><i style={{ width: `${Math.max(12, count / filteredReviews.length * 100)}%` }} /></div><strong>{count}</strong></div>; })}</div> : <div className="quiet-empty quiet-empty--horizontal"><Grid2X2 size={22} /><strong>No product breakdown yet</strong><span>Import reviews to make a product brief.</span></div>}</article></>;
 }
 
 function SettingsPage() {
@@ -303,18 +362,34 @@ function AppShell({ onLogout }: { onLogout: () => void }) {
   const [reviews, setReviews] = useState<Review[]>(() => {
     try { return JSON.parse(localStorage.getItem("sentimentiq-reviews") || "[]") as Review[]; } catch { return initialReviews; }
   });
-  const [filters, setFilters] = useState({ product: "All products", sentiment: "All sentiment", rating: "All ratings" });
+  const [lastAnalysis, setLastAnalysis] = useState<AnalysisSummary | null>(() => {
+    try { return JSON.parse(localStorage.getItem("sentimentiq-last-analysis") || "null") as AnalysisSummary | null; } catch { return null; }
+  });
+  const [filters, setFilters] = useState({ product: "All products", source: "All sources", sentiment: "All sentiment", rating: "All ratings", from: "", to: "" });
   const [search, setSearch] = useState("");
   const products = useMemo(() => Array.from(new Set(reviews.map((review) => review.product))).sort(), [reviews]);
+  const sources = useMemo(() => Array.from(new Set(reviews.map((review) => review.source))).sort(), [reviews]);
   const filteredReviews = useMemo(() => reviews.filter((review) => {
     const matchesProduct = filters.product === "All products" || review.product === filters.product;
+    const matchesSource = filters.source === "All sources" || review.source === filters.source;
     const matchesSentiment = filters.sentiment === "All sentiment" || review.sentiment === filters.sentiment;
     const matchesRating = filters.rating === "All ratings" || review.rating === Number(filters.rating);
+    const matchesFrom = !filters.from || review.createdAt >= filters.from;
+    const matchesTo = !filters.to || review.createdAt <= filters.to;
     const haystack = `${review.text} ${review.product} ${review.source}`.toLowerCase();
-    return matchesProduct && matchesSentiment && matchesRating && (!search || haystack.includes(search.toLowerCase()));
+    return matchesProduct && matchesSource && matchesSentiment && matchesRating && matchesFrom && matchesTo && (!search || haystack.includes(search.toLowerCase()));
   }), [filters, reviews, search]);
   const navigate = (path: string) => { if (path === "/") { onLogout(); return; } setLocation(path); };
   const handleImport = () => setLocation("/upload");
+  const handleAnalyze = (text: string, title: string, source: string) => {
+    const summary = analyzeScriptText(text, title, source);
+    const merged = [...reviews, ...summary.segments];
+    setReviews(merged);
+    setLastAnalysis(summary);
+    localStorage.setItem("sentimentiq-reviews", JSON.stringify(merged));
+    localStorage.setItem("sentimentiq-last-analysis", JSON.stringify(summary));
+    toast.success(`${summary.segments.length} transcript segments added to Dashboard and Reports.`);
+  };
   const onFile = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -331,7 +406,7 @@ function AppShell({ onLogout }: { onLogout: () => void }) {
     };
     reader.readAsText(file);
   };
-  return <div className="app-shell"><Sidebar view={view} onNavigate={navigate} collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} /><div className="workspace"><Topbar onImport={handleImport} onNavigate={navigate} /><main className="workspace-main">{view === "dashboard" && <Dashboard reviews={reviews} filteredReviews={filteredReviews} products={products} filters={filters} setFilters={setFilters} onImport={handleImport} onNavigate={navigate} />}{view === "upload" && <UploadPage onFile={onFile} />}{view === "reviews" && <ReviewsPage reviews={reviews} filteredReviews={filteredReviews} search={search} setSearch={setSearch} onNavigate={navigate} />}{view === "reports" && <ReportsPage filteredReviews={filteredReviews} filters={filters} onImport={handleImport} />}{view === "settings" && <SettingsPage />}</main><footer className="workspace-footer"><span>SentimentIQ · private workspace</span><span>Source context stays attached</span></footer></div></div>;
+  return <div className="app-shell"><Sidebar view={view} onNavigate={navigate} collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} /><div className="workspace"><Topbar onImport={handleImport} onNavigate={navigate} /><main className="workspace-main">{view === "dashboard" && <Dashboard reviews={reviews} filteredReviews={filteredReviews} products={products} sources={sources} filters={filters} setFilters={setFilters} onImport={handleImport} onNavigate={navigate} />}{view === "upload" && <UploadPage onFile={onFile} />}{view === "analysis" && <ScriptAnalysis lastAnalysis={lastAnalysis} onAnalyze={handleAnalyze} onNavigate={navigate} />}{view === "reviews" && <ReviewsPage reviews={reviews} filteredReviews={filteredReviews} search={search} setSearch={setSearch} onNavigate={navigate} />}{view === "reports" && <ReportsPage filteredReviews={filteredReviews} filters={filters} onImport={handleImport} />}{view === "settings" && <SettingsPage />}</main><footer className="workspace-footer"><span>SentimentIQ · private workspace</span><span>Source context stays attached</span></footer></div></div>;
 }
 
 export default function Home() {
