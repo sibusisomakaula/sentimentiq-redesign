@@ -1,57 +1,56 @@
-# SentimentIQ redesign delivery summary
+# SentimentIQ improvement pass delivery summary
 
-## Chosen direction
+## What changed
 
-SentimentIQ now follows **Quiet Signal**, a contemporary editorial information-design direction for B2B analytics. The experience uses warm paper surfaces, deep blue-pine ink, Signal Teal as the ownable brand color, Space Grotesk for analytical hierarchy, and DM Sans for utilitarian controls and source details.
-
-## Before and after
+This pass shifts SentimentIQ from the earlier muted cream/teal treatment to a brighter complementary system built around blue and orange. The visual direction remains analytical and trustworthy, but energy now comes from contrast, clear hierarchy, and provenance cues rather than low-contrast pastels or clutter.
 
 | Area | Before | After |
 |---|---|---|
-| Brand system | The deployed app mixed cream, teal, blue, purple, coral, and several neutral variants without a documented system. | All surfaces, controls, navigation, badges, charts, alerts, and empty states draw from explicit CSS variables in `client/src/index.css`. |
-| Landing/auth | A clean split layout, but the first impression read mostly as a standard login screen. | The landing view now pairs the auth card with evidence-first copy, a recurring signal mark, source-context preview sheet, report-like rules, and the same typography/color language as the workspace. |
-| Workspace shell | Persistent navigation existed, but the visual hierarchy was relatively uniform across cards. | The rail, topbar, page headers, scope bar, editorial eyebrows, signal motif, paper surfaces, and asymmetric analytical groupings create one consistent operating surface. |
-| Reports | Executive summary and product lens were present, but there was no sentiment distribution visualization. | Reports now include a responsive Positive / Neutral / Negative bar chart with axis labels, semantic colors, visible values, a hover tooltip with exact counts and share, and a provenance note. |
-| Empty states | Empty screens were informative but visually repetitive. | Empty states use the signal-bar motif, clearer action language, and preserved provenance cues, including upload affordances. |
-| Responsive behavior | Existing pages were primarily desktop-oriented. | Sidebar, controls, cards, chart, landing/auth, explorer, and settings layouts adapt down to a 390px viewport without horizontal page overflow. |
+| Image reliability | Generated hero and texture URLs were on the critical rendering path and displayed generation placeholders in the deployed experience. | Those unreliable background image dependencies were removed from the critical path and replaced with deterministic token-driven CSS motifs. The generated brand mark remains available, and the logo now falls back to the CSS three-bar mark if the asset fails. |
+| Color system | The prior palette mixed warm cream, teal, terracotta, and semantic colors without a bright complementary anchor. | Primary blue `#2563EB` and complementary orange `#F97316` now lead the product. Clean cool neutrals preserve readability, while positive/neutral/negative semantics remain visually distinct. |
+| Cross-page consistency | Landing, auth, dashboard, upload, explorer, reports, settings, and empty states were visually related but not fully unified. | All visible pages share the same primary/accent tokens, typography, input styling, report rules, active navigation treatment, signal motifs, and semantic badges. |
+| Brand motif | The signal motif was subtle and mostly confined to the brand area. | The three-bar signal mark now appears in the logo/fallback, active nav states, chart and empty-state graphics, report summaries, and upload guidance. |
+| Reports | A real-data bar graph existed, but the surrounding palette and empty-state treatment were muted. | The responsive Positive / Neutral / Negative bar chart now uses the new semantic colors and remains wired to the shared filtered review collection, with visible values, axis labels, tooltips, and a real-data empty state. |
 
-## Report data wiring
+## Image handling
 
-The bar chart is not backed by placeholder counts. It receives the same `filteredReviews` collection used by the dashboard and reports scope. In the static demo, a user selects a CSV in **Upload data**; the client parses rows, stores them in browser `localStorage`, and routes to `/reports`. The chart derives each bar count from the imported rows' `sentiment` field, and the tooltip derives the percentage from the selected collection. When there are no rows, the component deliberately renders an empty state rather than fabricated values.
+The deployed audit showed that the generated hero and report texture assets were rendering placeholder-generation content. They have been replaced with CSS-built background motifs so the page no longer depends on asynchronous generated backgrounds. The remaining generated brand mark is used in the header and favicon with descriptive alt text and a graceful CSS signal-mark fallback through `onError`. The final local preview screenshots for landing, dashboard, reports, and upload show no broken or placeholder image rendering.
 
-The lightweight CSV parser recognizes common headers for text (`review`, `comment`, `feedback`, `text`), sentiment (`sentiment`, `label`, `polarity`), product (`product`, `item`, `sku`), rating (`rating`, `score`, `stars`), and date (`date`, `created`, `time`, `timestamp`). This keeps the report behavior transparent while preserving the source filename on each imported row.
+## Reports data wiring
 
-## Reusable color tokens
+The chart derives from the same `filteredReviews` collection used by the dashboard and Reports scope. CSV import parses source rows in the browser, persists them to `localStorage`, and routes to Reports. Bar counts are computed from each imported row’s `sentiment` field; the tooltip computes the percentage from the selected collection. No fabricated customer reviews, ratings, or chart counts are seeded. With no imported rows, Reports intentionally shows a clear empty state instead of placeholder values.
+
+## Bright complementary color tokens
 
 | Token | Hex | Intended use |
 |---|---:|---|
-| `--paper` | `#F5F3EE` | Warm workspace and landing base |
-| `--paper-deep` | `#EAE8E0` | Soft controls, separators, and secondary surfaces |
-| `--surface` | `#FFFDF9` | Paper report cards and input surfaces |
-| `--surface-tint` | `#F9F8F4` | Quiet inset surfaces and filters |
-| `--ink` | `#15323A` | Headings, primary text, and navigation anchor |
-| `--ink-soft` | `#27464B` | Secondary dark text and code-like metadata |
-| `--muted-ink` | `#5D6C70` | Body copy, helper text, and axis labels |
-| `--faint-ink` | `#899497` | Low-priority metadata and disabled-adjacent copy |
-| `--line` | `#DCDDD6` | Hairline borders and report rules |
-| `--line-strong` | `#C8CEC8` | Input borders and emphasized separators |
-| `--signal` | `#0F6260` | Primary brand/nav/action color |
-| `--signal-deep` | `#0A4746` | Text on Signal Teal-soft surfaces and hover states |
-| `--signal-soft` | `#DCEEEA` | Active nav, info notes, and brand-tinted surfaces |
-| `--terracotta` | `#D96C4A` | Rare warmth accent and purposeful annotation |
-| `--terracotta-deep` | `#9E422E` | Terracotta text on light surfaces |
-| `--terracotta-soft` | `#F8E5DE` | Terracotta badge background |
-| `--positive` | `#2A7F62` | Positive chart bar and positive indicator |
-| `--positive-deep` | `#176044` | Positive badge text |
-| `--positive-soft` | `#E1F0E8` | Positive badge background |
-| `--neutral` | `#A36A00` | Neutral chart bar and neutral indicator |
-| `--neutral-deep` | `#7C4E00` | Neutral badge text |
-| `--neutral-soft` | `#F7EBCF` | Neutral badge background |
-| `--negative` | `#B64B49` | Negative chart bar and negative indicator |
-| `--negative-deep` | `#8D3437` | Negative badge text |
-| `--negative-soft` | `#F7E2E0` | Negative badge background |
-| `--grid` | `#E3E3DD` | Chart grid lines and analytical guides |
+| `--paper` | `#F6F8FB` | Bright workspace and landing base |
+| `--paper-deep` | `#E8EEF5` | Secondary controls and soft separators |
+| `--surface` | `#FFFFFF` | Cards, forms, and report surfaces |
+| `--surface-tint` | `#F9FBFD` | Inset surfaces and filter controls |
+| `--ink` | `#112A46` | Headings, primary text, and navigation anchor |
+| `--ink-soft` | `#27486B` | Secondary dark text and metadata |
+| `--muted-ink` | `#53657A` | Body copy, helper text, and chart labels |
+| `--faint-ink` | `#7B8A9B` | Low-priority metadata |
+| `--line` | `#D8E2EE` | Hairline rules and borders |
+| `--line-strong` | `#B9CBE0` | Emphasized input and control borders |
+| `--primary` | `#2563EB` | Bright primary action, active nav, key analytical emphasis |
+| `--primary-deep` | `#1D4ED8` | Hover states and text on primary-soft surfaces |
+| `--primary-soft` | `#DBEAFE` | Active navigation, info states, and primary-tinted surfaces |
+| `--accent` | `#F97316` | Complementary annotation and provenance moments |
+| `--accent-deep` | `#9A3412` | Accent text on light surfaces |
+| `--accent-soft` | `#FFEDD5` | Accent badge and annotation backgrounds |
+| `--positive` | `#16A34A` | Positive chart bar and positive indicator |
+| `--positive-deep` | `#166534` | Positive badge text |
+| `--positive-soft` | `#DCFCE7` | Positive badge background |
+| `--neutral` | `#D97706` | Neutral chart bar and neutral indicator |
+| `--neutral-deep` | `#92400E` | Neutral badge text |
+| `--neutral-soft` | `#FEF3C7` | Neutral badge background |
+| `--negative` | `#DC2626` | Negative chart bar and negative indicator |
+| `--negative-deep` | `#991B1B` | Negative badge text |
+| `--negative-soft` | `#FEE2E2` | Negative badge background |
+| `--grid` | `#E5ECF4` | Chart grid lines and analytical guides |
 
 ## Validation
 
-The frontend passed `pnpm check` and the production `pnpm build`. Desktop and mobile screenshots were captured for the landing, dashboard, reports, and upload routes. The local preview smoke test confirmed sign-in routing, shared navigation, empty-state chart behavior, and responsive stacking. The generated brand mark is wired into the header and favicon; the generated hero and report texture assets are referenced through the project storage URLs.
+The frontend passed `pnpm check` and the production `pnpm build`. The build has only the existing bundle-size advisory from the scaffold. Desktop screenshots were captured for landing, dashboard, reports, and upload after the asset repair; the visuals show no generation placeholder backgrounds. The chart empty state, shared navigation, and CSV/localStorage wiring remain in place for real imported data.

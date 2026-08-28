@@ -42,65 +42,77 @@
 }
 
 :root {
-  --radius: 0.72rem;
-  --paper: #F5F3EE;
-  --paper-deep: #EAE8E0;
-  --surface: #FFFDF9;
-  --surface-tint: #F9F8F4;
-  --ink: #15323A;
-  --ink-soft: #27464B;
-  --muted-ink: #5D6C70;
-  --faint-ink: #899497;
-  --line: #DCDDD6;
-  --line-strong: #C8CEC8;
-  --signal: #0F6260;
-  --signal-deep: #0A4746;
-  --signal-soft: #DCEEEA;
-  --terracotta: #D96C4A;
-  --terracotta-deep: #9E422E;
-  --terracotta-soft: #F8E5DE;
-  --positive: #2A7F62;
-  --positive-deep: #176044;
-  --positive-soft: #E1F0E8;
-  --neutral: #A36A00;
-  --neutral-deep: #7C4E00;
-  --neutral-soft: #F7EBCF;
-  --negative: #B64B49;
-  --negative-deep: #8D3437;
-  --negative-soft: #F7E2E0;
-  --grid: #E3E3DD;
-  --shadow: 0 20px 48px rgba(21, 50, 58, 0.08);
-  --shadow-soft: 0 8px 24px rgba(21, 50, 58, 0.06);
+  --radius: 0.62rem;
+  --paper: #F6F8FB;
+  --paper-deep: #E8EEF5;
+  --surface: #FFFFFF;
+  --surface-tint: #F9FBFD;
+  --ink: #112A46;
+  --ink-soft: #27486B;
+  --muted-ink: #53657A;
+  --faint-ink: #7B8A9B;
+  --line: #D8E2EE;
+  --line-strong: #B9CBE0;
+  --primary: #2563EB;
+  --primary-deep: #1D4ED8;
+  --primary-soft: #DBEAFE;
+  --accent: #F97316;
+  --accent-deep: #9A3412;
+  --accent-soft: #FFEDD5;
+  --signal: var(--primary);
+  --signal-deep: var(--primary-deep);
+  --signal-soft: var(--primary-soft);
+  --terracotta: var(--accent);
+  --terracotta-deep: var(--accent-deep);
+  --terracotta-soft: var(--accent-soft);
+  --positive: #16A34A;
+  --positive-deep: #166534;
+  --positive-soft: #DCFCE7;
+  --neutral: #D97706;
+  --neutral-deep: #92400E;
+  --neutral-soft: #FEF3C7;
+  --negative: #DC2626;
+  --negative-deep: #991B1B;
+  --negative-soft: #FEE2E2;
+  --grid: #E5ECF4;
+  --shadow: 0 20px 48px rgba(17, 42, 70, 0.09);
+  --shadow-soft: 0 8px 24px rgba(17, 42, 70, 0.07);
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .dark {
-  --paper: #122A30;
-  --paper-deep: #1A383D;
-  --surface: #17343A;
-  --surface-tint: #1C3A40;
-  --ink: #F5F3EE;
-  --ink-soft: #D7E3DE;
-  --muted-ink: #A5B7B4;
-  --faint-ink: #778E8B;
-  --line: #315257;
-  --line-strong: #46666A;
-  --signal: #72CFC3;
-  --signal-deep: #A9E9DF;
-  --signal-soft: #244F50;
-  --terracotta: #F09A7C;
-  --terracotta-deep: #FFB9A4;
-  --terracotta-soft: #58352E;
-  --positive: #78C99D;
-  --positive-deep: #A7E7C0;
-  --positive-soft: #234A3A;
-  --neutral: #E4B452;
-  --neutral-deep: #F5D58B;
-  --neutral-soft: #554426;
-  --negative: #E47B78;
-  --negative-deep: #FFA9A6;
-  --negative-soft: #542D30;
-  --grid: #29484D;
+  --paper: #0E1B2E;
+  --paper-deep: #162A43;
+  --surface: #122641;
+  --surface-tint: #173250;
+  --ink: #F7FAFC;
+  --ink-soft: #D7E6F6;
+  --muted-ink: #B5C7DA;
+  --faint-ink: #8298B0;
+  --line: #294565;
+  --line-strong: #3D5D7F;
+  --primary: #60A5FA;
+  --primary-deep: #93C5FD;
+  --primary-soft: #1E3A68;
+  --accent: #FB923C;
+  --accent-deep: #FDBA74;
+  --accent-soft: #5A2A13;
+  --signal: var(--primary);
+  --signal-deep: var(--primary-deep);
+  --signal-soft: var(--primary-soft);
+  --terracotta: var(--accent);
+  --terracotta-deep: var(--accent-deep);
+  --terracotta-soft: var(--accent-soft);
+  --positive: #4ADE80;
+  --positive-deep: #86EFAC;
+  --positive-soft: #16452A;
+  --neutral: #FBBF24;
+  --neutral-deep: #FCD34D;
+  --neutral-soft: #523B12;
+  --negative: #F87171;
+  --negative-deep: #FCA5A5;
+  --negative-soft: #4F1D1D;
+  --grid: #203C5C;
 }
 
 @layer base {
@@ -127,7 +139,7 @@ button, input, select { transition: border-color 180ms var(--ease-out), backgrou
 button:active { transform: scale(0.97); }
 
 .app-shell { min-height: 100vh; display: flex; background: var(--paper); color: var(--ink); position: relative; }
-.app-shell::before { content: ""; position: fixed; inset: 0; pointer-events: none; opacity: 0.06; background: url("/manus-storage/sentimentiq-report-texture_88c15a43.png") center top / cover; mix-blend-mode: multiply; z-index: 0; }
+.app-shell::before { content: ""; position: fixed; inset: 0; pointer-events: none; opacity: 0.42; background-image: radial-gradient(circle at 14% 18%, color-mix(in srgb, var(--primary) 10%, transparent) 0 1px, transparent 1.5px), linear-gradient(110deg, transparent 0 58%, color-mix(in srgb, var(--accent) 7%, transparent) 58% 58.2%, transparent 58.2% 100%); background-size: 18px 18px, 100% 100%; mix-blend-mode: multiply; z-index: 0; }
 .sidebar, .workspace { position: relative; z-index: 1; }
 .sidebar { width: 248px; min-height: 100vh; background: color-mix(in srgb, var(--surface) 94%, transparent); border-right: 1px solid var(--line); display: flex; flex-direction: column; padding: 22px 14px 16px; flex-shrink: 0; transition: width 220ms var(--ease-out); }
 .sidebar--collapsed { width: 76px; padding-inline: 12px; }
@@ -294,7 +306,7 @@ button:active { transform: scale(0.97); }
 
 /* Auth / landing: the same tokens and signal mark establish continuity before workspace entry. */
 .landing-page { min-height: 100vh; display: flex; flex-direction: column; position: relative; overflow: hidden; background: var(--paper); color: var(--ink); }
-.landing-page::before { content: ""; position: absolute; inset: 0; opacity: .18; background: url("/manus-storage/sentimentiq-hero-plate_dd074c50.png") 52% 37% / cover no-repeat; mix-blend-mode: multiply; pointer-events: none; }
+.landing-page::before { content: ""; position: absolute; inset: 0; opacity: .85; background-image: radial-gradient(circle at 77% 27%, color-mix(in srgb, var(--primary) 13%, transparent) 0 1px, transparent 1.5px), linear-gradient(135deg, transparent 0 66%, color-mix(in srgb, var(--accent) 10%, transparent) 66% 66.25%, transparent 66.25% 100%); background-size: 20px 20px, 100% 100%; pointer-events: none; }
 .landing-grid { position: absolute; inset: 0; background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px); background-size: 100% 86px, 86px 100%; opacity: .23; pointer-events: none; }
 .landing-nav, .landing-content, .landing-footer { position: relative; z-index: 1; }
 .landing-nav { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 24px clamp(24px, 6vw, 88px); border-bottom: 1px solid color-mix(in srgb, var(--line) 75%, transparent); }
@@ -520,4 +532,11 @@ button:active { transform: scale(0.97); }
 @media (max-width: 520px) {
   .sheet-body { grid-template-columns: 1fr; gap: 13px; }
   .landing-signal-sheet { margin-top: 30px; }
+}
+
+/* Bright refresh polish: use the signal stamp as an annotation device rather than a decorative tile. */
+.upload-intro-side { display: grid; justify-items: end; align-content: start; gap: 16px; }
+.upload-intro-side .signal-stamp { color: var(--primary); background: var(--primary-soft); }
+@media (max-width: 520px) {
+  .upload-intro-side { display: flex; align-items: center; justify-content: space-between; margin-top: 15px; }
 }

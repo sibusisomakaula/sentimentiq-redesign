@@ -81,3 +81,9 @@ A compact signal mark of three offset bars—positive rising, neutral steady, ne
 - Cards and panels should feel like paper report surfaces: hierarchy comes from section rules, labels, scale, and analytical grouping, never from generic SaaS card repetition.
 - The three-bar signal mark must appear as a recurring system motif in logos, empty states, chart legends, nav states, and key navigation states so SentimentIQ remains recognizable without relying on the wordmark.
 - Landing pages must show the evidence-first workspace idea visually, using signal/report motifs or source-context cues rather than behaving primarily as a standard centered login screen.
+
+## Bright complementary refresh
+
+The new prompt supersedes the previous muted palette for this pass. The product now uses a bright blue primary (`#2563EB`) opposite a purposeful orange accent (`#F97316`) on a clean cool-neutral scale. Sentiment colors remain semantically separate: evergreen for positive, amber for neutral, and red for negative. The bright system is energetic through contrast and hierarchy rather than neon saturation or clutter.
+
+Unreliable generated hero and texture backgrounds were removed from the critical rendering path and replaced with deterministic CSS motifs that inherit the token system. The remaining generated brand mark is protected by an `onError` fallback to the CSS signal mark, so missing image assets cannot collapse the header or favicon experience.
