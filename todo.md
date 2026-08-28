@@ -1,10 +1,9 @@
-# SentimentIQ upload hardening checklist
+# SentimentIQ dark theme checklist
 
-- [x] Test deployed CSV upload from file selection through parsed sentiment results.
-- [x] Record currently supported types and the exact failure or hang point.
-- [x] Add explicit CSV, PDF, and DOCX acceptance and rejection messaging.
-- [x] Add client-side PDF multi-page text extraction and DOCX text extraction.
-- [x] Process parsed segments in yielding batches with progress and cancellation-safe UI states.
-- [x] Persist parsed rows into the existing Dashboard, Reports, and Reviews data model.
-- [x] Verify successful uploads, malformed files, unsupported types, and large-file behavior.
-- [x] Document findings, supported limits, and implementation notes.
+- [x] Audit current light tokens and page-specific surface overrides.
+- [x] Define layered near-black backgrounds, off-white text hierarchy, tuned complementary primary/accent, and distinct semantic colors.
+- [x] Calculate WCAG contrast ratios for body text, muted text, links, buttons, badges, chart labels, and borders.
+- [x] Apply the dark token system uniformly across landing, auth, dashboard, reports, Script analysis, upload, and settings.
+- [x] Re-check charts, badges, inputs, progress bars, empty states, and navigation states on dark surfaces.
+- [x] Verify desktop/mobile screenshots and interaction readability.
+- [x] Write the final before/after summary and hex token list.
