@@ -1,10 +1,10 @@
-# SentimentIQ dashboard and script analysis checklist
+# SentimentIQ upload hardening checklist
 
-- [x] Audit the deployed dashboard, reports route, navigation, and shared review data model.
-- [x] Define a shared analysis result schema for imported reviews and script/transcript segments.
-- [x] Add a dedicated Script analysis route with paste and TXT/CSV upload inputs.
-- [x] Implement overall classification, segment-level tagging, and key-phrase highlighting.
-- [x] Feed script analysis results into dashboard KPIs, recent activity, and Reports distribution.
-- [x] Add dashboard quick filters and clear navigation between Dashboard, Reports, and Script analysis.
-- [x] Verify token consistency, responsive behavior, and analysis empty/error states.
-- [x] Write the final dashboard and script-analysis delivery summary.
+- [x] Test deployed CSV upload from file selection through parsed sentiment results.
+- [x] Record currently supported types and the exact failure or hang point.
+- [x] Add explicit CSV, PDF, and DOCX acceptance and rejection messaging.
+- [x] Add client-side PDF multi-page text extraction and DOCX text extraction.
+- [x] Process parsed segments in yielding batches with progress and cancellation-safe UI states.
+- [x] Persist parsed rows into the existing Dashboard, Reports, and Reviews data model.
+- [x] Verify successful uploads, malformed files, unsupported types, and large-file behavior.
+- [x] Document findings, supported limits, and implementation notes.

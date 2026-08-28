@@ -594,3 +594,13 @@ button:active { transform: scale(0.97); }
 .phrase-empty { margin: 0; color: var(--faint-ink); font-size: 11px; }
 @media (max-width: 980px) { .analysis-layout, .analysis-result-grid { grid-template-columns: 1fr; } .analysis-guide { min-height: 0; } }
 @media (max-width: 520px) { .analysis-form { grid-template-columns: 1fr; } .analysis-actions, .analysis-results-heading { align-items: stretch; flex-direction: column; } .analysis-actions .button, .file-button { justify-content: center; } }
+
+/* Upload processing: keep long extraction visible without blocking the workspace. */
+.upload-progress { margin-top: 14px; padding: 12px 14px; border: 1px solid var(--line); background: var(--surface-tint); }
+.upload-progress--error { border-color: var(--negative); background: var(--negative-soft); }
+.upload-progress__copy { display: flex; justify-content: space-between; gap: 12px; color: var(--muted-ink); font-size: 10px; line-height: 1.45; }
+.upload-progress__copy strong { color: var(--ink); font-family: "Space Grotesk", sans-serif; }
+.upload-progress__track { height: 5px; margin-top: 9px; overflow: hidden; background: var(--paper-deep); }
+.upload-progress__track i { display: block; height: 100%; background: var(--primary); transition: width 180ms var(--ease-out); }
+.upload-progress--error .upload-progress__track i { background: var(--negative); }
+.upload-progress--complete .upload-progress__track i { background: var(--positive); }

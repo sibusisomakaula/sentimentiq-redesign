@@ -48,6 +48,10 @@ import {
   YAxis,
 } from "recharts";
 import { toast } from "sonner";
+import * as pdfjsLib from "pdfjs-dist";
+import mammoth from "mammoth/mammoth.browser";
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.mjs", import.meta.url).toString();
 
 interface Review {
   id: string;
@@ -69,6 +73,8 @@ interface AnalysisSummary {
   positivePhrases: string[];
   negativePhrases: string[];
 }
+
+type UploadStatus = { status: "idle" | "processing" | "complete" | "error"; progress: number; message: string };
 
 type ViewKey = "dashboard" | "upload" | "analysis" | "reviews" | "reports" | "settings";
 
@@ -111,6 +117,49 @@ function analyzeScriptText(text: string, title: string, source: string): Analysi
   const positivePhrases = segments.filter((segment) => segment.sentiment === "Positive").slice(0, 3).map((segment) => segment.text);
   const negativePhrases = segments.filter((segment) => segment.sentiment === "Negative").slice(0, 3).map((segment) => segment.text);
   return { id: `${title}-${Date.now()}`, title, source, score: overall.score, sentiment: overall.sentiment, segments, positivePhrases, negativePhrases };
+}
+
+function textToReviewRows(text: string, source: string): Review[] {
+  const segments = text.split(/\n+|(?<=[.!?])\s+(?=[A-Z])/).map((segment) => segment.trim()).filter((segment) => segment.length > 2);
+  return segments.map((segment, index) => {
+    const result = classifyText(segment);
+    return { id: `${source}-${index}-${Date.now()}`, text: segment, sentiment: result.sentiment, rating: null, product: "Imported document", createdAt: new Date().toISOString().slice(0, 10), source };
+  });
+}
+
+async function extractPdfText(file: File): Promise<string> {
+  const buffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+  const pages: string[] = [];
+  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+    const page = await pdf.getPage(pageNumber);
+    const content = await page.getTextContent();
+    pages.push(content.items.map((item) => ("str" in item ? item.str : "")).join(" "));
+  }
+  return pages.join("\n");
+}
+
+async function extractDocxText(file: File): Promise<string> {
+  const result = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
+  return result.value;
+}
+
+async function extractUploadText(file: File): Promise<string> {
+  const extension = file.name.toLowerCase().split(".").pop();
+  if (extension === "pdf") return extractPdfText(file);
+  if (extension === "docx") return extractDocxText(file);
+  return file.text();
+}
+
+async function processInBatches(rows: Review[], onProgress: (processed: number) => void): Promise<Review[]> {
+  const processed: Review[] = [];
+  const batchSize = 40;
+  for (let start = 0; start < rows.length; start += batchSize) {
+    processed.push(...rows.slice(start, start + batchSize));
+    onProgress(Math.min(processed.length, rows.length));
+    await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
+  }
+  return processed;
 }
 
 function parseCsv(text: string, source: string): Review[] {
@@ -337,8 +386,9 @@ function ScriptAnalysis({ lastAnalysis, onAnalyze, onNavigate }: { lastAnalysis:
   return <><PageHeader eyebrow="Workspace / Intelligence" title="Read the conversation beneath the words." description="Paste a script, call transcript, chat log, or review file and keep its sentiment signal connected to the workspace." action={<StatusPill tone="teal">Local analysis</StatusPill>} /><section className="analysis-layout"><article className="card analysis-input-card"><div className="card-heading"><div><Eyebrow>Script / transcript analysis</Eyebrow><h2>Bring the raw language in.</h2><p>Segments split by speaker turns or sentences receive a transparent local sentiment label.</p></div><FileText size={17} /></div><div className="analysis-form"><label>Analysis name<input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Q3 support call" /></label><label>Source label<input value={source} onChange={(event) => setSource(event.target.value)} placeholder="Pasted script" /></label></div><label className="analysis-textarea-label">Raw text<textarea value={text} onChange={(event) => setText(event.target.value)} placeholder={'Agent: Thanks for calling. I am happy to help.\nCustomer: The delivery was late and the setup was confusing.'} /><span>{text.length.toLocaleString()} characters · plain text or CSV content</span></label><div className="analysis-actions"><label className="file-button"><input type="file" accept=".txt,.csv,text/plain,text/csv" onChange={handleFile} /><CloudUpload size={15} />{fileName ? "Replace file" : "Upload TXT / CSV"}</label><button className="button button--primary" onClick={() => { if (!text.trim()) { toast.error("Paste or upload text before analyzing."); return; } onAnalyze(text, title || "Untitled analysis", source || "Pasted script"); }}><Sparkles size={15} />Analyze sentiment</button></div></article><aside className="card analysis-guide"><Eyebrow>How it connects</Eyebrow><h2>One signal, three views.</h2><div className="analysis-guide-step"><span>01</span><div><strong>Overall score</strong><p>A single classification and signed score summarize the full text.</p></div></div><div className="analysis-guide-step"><span>02</span><div><strong>Segment evidence</strong><p>Speaker turns and sentences stay visible with their own sentiment tags.</p></div></div><div className="analysis-guide-step"><span>03</span><div><strong>Workspace roll-up</strong><p>Analyzed segments become source rows in Dashboard and Reports.</p></div></div><div className="analysis-schema"><Tag size={15} /><span>Positive, neutral, and negative use the existing semantic token set.</span></div></aside></section>{lastAnalysis && <section className="analysis-results"><div className="analysis-results-heading"><div><Eyebrow>Latest analysis</Eyebrow><h2>{lastAnalysis.title}</h2><p>{lastAnalysis.source} · {lastAnalysis.segments.length} segments added to the workspace</p></div><button className="text-action" onClick={() => onNavigate("/reports")}>Open reports <ChevronRight size={14} /></button></div><div className="analysis-result-grid"><article className="card analysis-score-card"><div className={`analysis-score analysis-score--${lastAnalysis.sentiment.toLowerCase()}`}><strong>{lastAnalysis.score > 0 ? "+" : ""}{lastAnalysis.score}</strong><span>{lastAnalysis.sentiment}</span></div><p>Overall sentiment score</p><div className="analysis-mini-bar"><i style={{ width: `${Math.max(4, Math.abs(lastAnalysis.score))}%` }} /></div><small>Signed score from -100 to +100</small></article><article className="card segment-card"><div className="card-heading"><div><Eyebrow>Segment view</Eyebrow><h2>Line-by-line signal</h2></div><StatusPill tone="ink">{lastAnalysis.segments.length} tagged</StatusPill></div><div className="segment-list">{lastAnalysis.segments.map((segment) => <div className="segment-row" key={segment.id}><span className={`sentiment-dot sentiment-dot--${segment.sentiment.toLowerCase()}`} /><div><span>{segment.text}</span><small>{segment.sentiment} · {segment.source}</small></div></div>)}</div></article><article className="card evidence-card"><div className="card-heading"><div><Eyebrow>Key phrases</Eyebrow><h2>What drove the label</h2></div><Lightbulb size={16} /></div><div className="phrase-group"><span className="phrase-label phrase-label--positive">Positive evidence</span>{lastAnalysis.positivePhrases.length ? lastAnalysis.positivePhrases.map((phrase) => <p className="phrase phrase--positive" key={phrase}><ArrowUpRight size={13} />{phrase}</p>) : <p className="phrase-empty">No strong positive phrase detected.</p>}</div><div className="phrase-group"><span className="phrase-label phrase-label--negative">Negative evidence</span>{lastAnalysis.negativePhrases.length ? lastAnalysis.negativePhrases.map((phrase) => <p className="phrase phrase--negative" key={phrase}><ArrowDownRight size={13} />{phrase}</p>) : <p className="phrase-empty">No strong negative phrase detected.</p>}</div></article></div></section>}</>;
 }
 
-function UploadPage({ onFile }: { onFile: (event: ChangeEvent<HTMLInputElement>) => void }) {
-  return <><PageHeader eyebrow="Workspace / Ingest" title="Bring feedback into focus." description="Import CSV feedback, confirm the fields, and keep the source visible." action={<StatusPill tone="ink">0 files queued</StatusPill>} /><section className="upload-layout"><article className="card upload-card"><div className="upload-card__intro"><div><Eyebrow>Data ingest</Eyebrow><h2>Import the source once.</h2><p>SentimentIQ normalizes feedback into one review schema. The mapping step stays explicit so imported data never becomes a black box.</p></div><div className="upload-intro-side"><div className="signal-stamp" aria-hidden="true"><i /><i /><i /></div><div className="file-badges"><span>CSV</span><span>DOCX</span><span>PDF</span></div></div></div><label className="drop-zone"><input type="file" accept=".csv,text/csv" onChange={onFile} /><CloudUpload size={26} /><strong>Drop a review file here</strong><span>or choose a CSV up to 25 MB</span><span className="button button--secondary">Choose file</span></label><div className="upload-notes"><div><CircleHelp size={16} /><span><strong>What happens next</strong>Each imported row is scored against a transparent keyword model, assigned themes, and saved locally for this workspace.</span></div><div><ShieldCheck size={16} /><span><strong>Source stays visible</strong>Every imported row retains its original file name and the audit surface records the import.</span></div></div></article><aside className="card import-guide"><Eyebrow>Import guide</Eyebrow><h2>Make the first signal useful.</h2><div className="guide-step"><span>01</span><div><strong>Include a text column</strong><p>Use a header like review, comment, feedback, or text.</p></div></div><div className="guide-step"><span>02</span><div><strong>Add sentiment when available</strong><p>Positive, neutral, and negative labels are recognized directly.</p></div></div><div className="guide-step"><span>03</span><div><strong>Keep product and date nearby</strong><p>Optional context unlocks clearer filters and trend views.</p></div></div><div className="format-note"><Database size={15} /><span>Imported rows stay in this browser session until identity storage is connected.</span></div></aside></section></>;
+function UploadPage({ onFile, uploadStatus }: { onFile: (event: ChangeEvent<HTMLInputElement>) => void; uploadStatus: UploadStatus }) {
+  const statusTone = uploadStatus.status === "complete" ? "teal" : uploadStatus.status === "error" ? "coral" : uploadStatus.status === "processing" ? "amber" : "ink";
+  return <><PageHeader eyebrow="Workspace / Ingest" title="Bring feedback into focus." description="Import CSV feedback, multi-page PDFs, or Word documents; SentimentIQ extracts text and keeps the source visible." action={<StatusPill tone={statusTone}>{uploadStatus.status === "idle" ? "0 files queued" : uploadStatus.status === "processing" ? "Processing" : uploadStatus.status === "complete" ? "Ready" : "Needs attention"}</StatusPill>} /><section className="upload-layout"><article className="card upload-card"><div className="upload-card__intro"><div><Eyebrow>Data ingest</Eyebrow><h2>Import the source once.</h2><p>SentimentIQ normalizes feedback into one review schema. The mapping step stays explicit so imported data never becomes a black box.</p></div><div className="upload-intro-side"><div className="signal-stamp" aria-hidden="true"><i /><i /><i /></div><div className="file-badges"><span>CSV</span><span>DOCX</span><span>PDF</span></div></div></div><label className="drop-zone"><input type="file" accept=".csv,.pdf,.docx,text/csv,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={onFile} /><CloudUpload size={26} /><strong>Drop a review file here</strong><span>CSV, PDF, or DOCX · up to 25 MB</span><span className="button button--secondary">Choose file</span></label>{uploadStatus.status !== "idle" && <div className={`upload-progress upload-progress--${uploadStatus.status}`}><div className="upload-progress__copy"><span>{uploadStatus.message}</span><strong>{uploadStatus.progress}%</strong></div><div className="upload-progress__track"><i style={{ width: `${uploadStatus.progress}%` }} /></div></div>}<div className="upload-notes"><div><CircleHelp size={16} /><span><strong>What happens next</strong>CSV rows are parsed from their text column; PDF and DOCX pages become text segments, then all rows are scored and saved locally.</span></div><div><ShieldCheck size={16} /><span><strong>Source stays visible</strong>Every imported row retains its original file name and the audit surface records the import.</span></div></div></article><aside className="card import-guide"><Eyebrow>Import guide</Eyebrow><h2>Make the first signal useful.</h2><div className="guide-step"><span>01</span><div><strong>Include a text column</strong><p>Use a header like review, comment, feedback, or text.</p></div></div><div className="guide-step"><span>02</span><div><strong>Add sentiment when available</strong><p>Positive, neutral, and negative labels are recognized directly.</p></div></div><div className="guide-step"><span>03</span><div><strong>Keep product and date nearby</strong><p>Optional context unlocks clearer filters and trend views.</p></div></div><div className="format-note"><Database size={15} /><span>Imported rows stay in this browser session until identity storage is connected.</span></div></aside></section></>;
 }
 
 function ReviewsPage({ reviews, filteredReviews, search, setSearch, onNavigate }: { reviews: Review[]; filteredReviews: Review[]; search: string; setSearch: (value: string) => void; onNavigate: (path: string) => void }) {
@@ -362,6 +412,7 @@ function AppShell({ onLogout }: { onLogout: () => void }) {
   const [reviews, setReviews] = useState<Review[]>(() => {
     try { return JSON.parse(localStorage.getItem("sentimentiq-reviews") || "[]") as Review[]; } catch { return initialReviews; }
   });
+  const [uploadStatus, setUploadStatus] = useState<UploadStatus>({ status: "idle", progress: 0, message: "" });
   const [lastAnalysis, setLastAnalysis] = useState<AnalysisSummary | null>(() => {
     try { return JSON.parse(localStorage.getItem("sentimentiq-last-analysis") || "null") as AnalysisSummary | null; } catch { return null; }
   });
@@ -390,23 +441,43 @@ function AppShell({ onLogout }: { onLogout: () => void }) {
     localStorage.setItem("sentimentiq-last-analysis", JSON.stringify(summary));
     toast.success(`${summary.segments.length} transcript segments added to Dashboard and Reports.`);
   };
-  const onFile = (event: ChangeEvent<HTMLInputElement>) => {
+  const onFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    if (!file.name.toLowerCase().endsWith(".csv")) { toast.error("For this local demo, choose a CSV file."); return; }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const next = parseCsv(String(reader.result || ""), file.name);
-      if (!next.length) { toast.error("No review rows were found. Check that the CSV has a text or feedback column."); return; }
-      const merged = [...reviews, ...next];
+    const extension = file.name.toLowerCase().split(".").pop();
+    const supported = ["csv", "pdf", "docx"];
+    if (!extension || !supported.includes(extension)) {
+      const message = "Unsupported file type. SentimentIQ accepts CSV, PDF, or DOCX files.";
+      setUploadStatus({ status: "error", progress: 0, message });
+      toast.error(message);
+      return;
+    }
+    if (file.size > 25 * 1024 * 1024) {
+      const message = "This file is larger than 25 MB. Choose a smaller CSV, PDF, or DOCX file.";
+      setUploadStatus({ status: "error", progress: 0, message });
+      toast.error(message);
+      return;
+    }
+    try {
+      setUploadStatus({ status: "processing", progress: 10, message: `Reading ${file.name}…` });
+      const text = await extractUploadText(file);
+      setUploadStatus({ status: "processing", progress: 36, message: "Extracted text. Building sentiment rows…" });
+      const next = extension === "csv" ? parseCsv(text, file.name) : textToReviewRows(text, file.name);
+      if (!next.length) throw new Error(extension === "csv" ? "No review rows were found. Add a text or feedback column to the CSV." : "No readable text was found in this document.");
+      const processed = await processInBatches(next, (count) => setUploadStatus({ status: "processing", progress: 36 + Math.round(count / next.length * 54), message: `Processed ${count.toLocaleString()} of ${next.length.toLocaleString()} segments…` }));
+      const merged = [...reviews, ...processed];
       setReviews(merged);
       localStorage.setItem("sentimentiq-reviews", JSON.stringify(merged));
-      toast.success(`${next.length} source rows imported. Reports are now calculated from this data.`);
+      setUploadStatus({ status: "complete", progress: 100, message: `${processed.length.toLocaleString()} source rows ready for review.` });
+      toast.success(`${processed.length} ${extension.toUpperCase()} rows imported. Reports are now calculated from this data.`);
       setLocation("/reports");
-    };
-    reader.readAsText(file);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "We could not read this file. Try another CSV, PDF, or DOCX.";
+      setUploadStatus({ status: "error", progress: 0, message });
+      toast.error(message);
+    }
   };
-  return <div className="app-shell"><Sidebar view={view} onNavigate={navigate} collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} /><div className="workspace"><Topbar onImport={handleImport} onNavigate={navigate} /><main className="workspace-main">{view === "dashboard" && <Dashboard reviews={reviews} filteredReviews={filteredReviews} products={products} sources={sources} filters={filters} setFilters={setFilters} onImport={handleImport} onNavigate={navigate} />}{view === "upload" && <UploadPage onFile={onFile} />}{view === "analysis" && <ScriptAnalysis lastAnalysis={lastAnalysis} onAnalyze={handleAnalyze} onNavigate={navigate} />}{view === "reviews" && <ReviewsPage reviews={reviews} filteredReviews={filteredReviews} search={search} setSearch={setSearch} onNavigate={navigate} />}{view === "reports" && <ReportsPage filteredReviews={filteredReviews} filters={filters} onImport={handleImport} />}{view === "settings" && <SettingsPage />}</main><footer className="workspace-footer"><span>SentimentIQ · private workspace</span><span>Source context stays attached</span></footer></div></div>;
+  return <div className="app-shell"><Sidebar view={view} onNavigate={navigate} collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} /><div className="workspace"><Topbar onImport={handleImport} onNavigate={navigate} /><main className="workspace-main">{view === "dashboard" && <Dashboard reviews={reviews} filteredReviews={filteredReviews} products={products} sources={sources} filters={filters} setFilters={setFilters} onImport={handleImport} onNavigate={navigate} />}{view === "upload" && <UploadPage onFile={onFile} uploadStatus={uploadStatus} />}{view === "analysis" && <ScriptAnalysis lastAnalysis={lastAnalysis} onAnalyze={handleAnalyze} onNavigate={navigate} />}{view === "reviews" && <ReviewsPage reviews={reviews} filteredReviews={filteredReviews} search={search} setSearch={setSearch} onNavigate={navigate} />}{view === "reports" && <ReportsPage filteredReviews={filteredReviews} filters={filters} onImport={handleImport} />}{view === "settings" && <SettingsPage />}</main><footer className="workspace-footer"><span>SentimentIQ · private workspace</span><span>Source context stays attached</span></footer></div></div>;
 }
 
 export default function Home() {
