@@ -1,5 +1,5 @@
 # INNO-Tech SentimentIQ
-
+Demo: https://sentimentiq-yjipty6u.manus.space
 > Customer signal, without the fog.
 
 INNO-Tech SentimentIQ is a browser-first customer feedback analytics workspace. It imports review data and documents, classifies sentiment, analyzes scripts and transcripts, and presents the resulting evidence through a shared Dashboard, Reviews explorer, and Reports view.
