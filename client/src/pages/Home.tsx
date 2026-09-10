@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState, type ChangeEvent, type ReactNode } from "react";
 import { useLocation } from "wouter";
+import { useTheme } from "@/contexts/ThemeContext";
 import {
   Bar,
   BarChart,
@@ -206,8 +207,8 @@ function Logo({ compact = false }: { compact?: boolean }) {
   const [imageFailed, setImageFailed] = useState(false);
   return (
     <div className={`brand-lockup ${compact ? "brand-lockup--compact" : ""}`}>
-      {imageFailed ? <div className="signal-mark" aria-label="SentimentIQ signal mark"><span /><span /><span /></div> : <img className="brand-mark-image" src="/manus-storage/sentimentiq-mark_a3664ce1.png" alt="SentimentIQ signal mark" onError={() => setImageFailed(true)} />}
-      {!compact && <span className="brand-name">Sentiment<span>IQ</span></span>}
+      {imageFailed ? <div className="signal-mark" aria-label="INNO-Tech SentimentIQ signal mark"><span /><span /><span /></div> : <img className="brand-mark-image" src="/manus-storage/sentimentiq-mark_a3664ce1.png" alt="INNO-Tech SentimentIQ signal mark" onError={() => setImageFailed(true)} />}
+      {!compact && <span className="brand-name">INNO-Tech <span>SentimentIQ</span></span>}
     </div>
   );
 }
@@ -305,17 +306,19 @@ function DistributionCard({ reviews, onImport, title = "Sentiment distribution" 
 }
 
 function Landing({ onEnter }: { onEnter: () => void }) {
+  const { theme, toggleTheme } = useTheme();
+  const nextTheme = theme === "dark" ? "light" : "dark";
   const [email, setEmail] = useState("admin@sentimentiq.com");
   const [password, setPassword] = useState("Admin123!");
   return (
     <main className="landing-page">
       <div className="landing-grid" />
-      <nav className="landing-nav"><Logo /><div className="landing-nav__meta"><span className="live-pip" />Private workspace<button className="icon-button" aria-label="Switch to dark mode" onClick={() => toast("Dark mode is queued for a future theme release.")}><Sparkles size={16} /></button></div></nav>
+      <nav className="landing-nav"><Logo /><div className="landing-nav__meta"><span className="live-pip" />Private workspace<button className="icon-button" aria-label={`Switch to ${nextTheme} mode`} title={`Switch to ${nextTheme} mode`} onClick={() => toggleTheme?.()}><Sparkles size={16} /></button></div></nav>
       <section className="landing-content">
         <div className="landing-copy">
           <Eyebrow>Customer signal, without the fog</Eyebrow>
           <h1>Know what customers <em>mean,</em> not just what they say.</h1>
-          <p>SentimentIQ brings imported feedback, traceable labels, and human QA into one calm operating surface.</p>
+          <p>INNO-Tech SentimentIQ brings imported feedback, traceable labels, and human QA into one calm operating surface.</p>
           <div className="landing-proof"><span><ShieldCheck size={15} />Traceable labels</span><span><Zap size={15} />Fast first import</span><span><Activity size={15} />Live aggregates</span></div>
           <div className="landing-note"><span>Signal note</span><strong>Import the source. Keep the story attached.</strong></div>
           <div className="landing-signal-sheet" aria-label="Evidence preview">
@@ -335,26 +338,30 @@ function Landing({ onEnter }: { onEnter: () => void }) {
           <div className="demo-note"><span>Local demo access · change before production</span><code>admin@sentimentiq.com</code><code>Admin123!</code></div>
         </div>
       </section>
-      <footer className="landing-footer"><span>Built for product, support, and growth teams</span><span>© 2026 SentimentIQ</span></footer>
+      <footer className="landing-footer"><span>Built for product, support, and growth teams</span><span>© 2026 INNO-Tech SentimentIQ</span></footer>
     </main>
   );
 }
 
 function Sidebar({ view, onNavigate, collapsed, onToggle }: { view: ViewKey; onNavigate: (path: string) => void; collapsed: boolean; onToggle: () => void }) {
+  const { theme, toggleTheme } = useTheme();
+  const nextTheme = theme === "dark" ? "light" : "dark";
   return (
     <aside className={`sidebar ${collapsed ? "sidebar--collapsed" : ""}`}>
       <div className="sidebar__brand"><Logo compact={collapsed} /><button className="icon-button" aria-label={collapsed ? "Expand navigation" : "Collapse navigation"} onClick={onToggle}>{collapsed ? <PanelLeft size={17} /> : <X size={17} />}</button></div>
       {!collapsed && <div className="workspace-switcher"><div><span className="live-pip" />Live workspace</div><MoreHorizontal size={15} /></div>}
       <div className="sidebar__section"><span className="sidebar__label">Workspace</span>{navItems.map(({ key, label, icon: Icon, path }) => <button key={key} className={`nav-item ${view === key ? "nav-item--active" : ""}`} onClick={() => onNavigate(path)} title={collapsed ? label : undefined}>{view === key && <span className="nav-signal" aria-hidden="true"><i /><i /><i /></span>}<Icon size={17} /><span>{label}</span>{view === key && <ChevronRight className="nav-item__arrow" size={14} />}</button>)}</div>
       {!collapsed && <div className="sidebar__note"><Lightbulb size={16} /><div><strong>Signal note</strong><span>Import is the first step. Interpretation stays traceable.</span></div></div>}
-      <div className="sidebar__bottom">{!collapsed && <div className="appearance"><span>Appearance</span><button className="theme-toggle" onClick={() => toast("Theme controls are ready for the next release.")}><span className="theme-toggle__active">☼</span><span>☾</span></button></div>}<button className="user-menu" onClick={() => onNavigate("/settings")}><span className="avatar">A</span>{!collapsed && <span><strong>Admin User</strong><small>Administrator</small></span>}{!collapsed && <ChevronDown size={15} />}</button>{!collapsed && <button className="sign-out" onClick={() => onNavigate("/")}><LogIn size={14} />Sign out</button>}</div>
+      <div className="sidebar__bottom">{!collapsed && <div className="appearance"><span>Appearance</span><button className="theme-toggle" aria-label={`Switch to ${nextTheme} mode`} title={`Switch to ${nextTheme} mode`} onClick={() => toggleTheme?.()}><span className={theme === "light" ? "theme-toggle__active" : ""}>☼</span><span className={theme === "dark" ? "theme-toggle__active" : ""}>☾</span></button></div>}<button className="user-menu" onClick={() => onNavigate("/settings")}><span className="avatar">A</span>{!collapsed && <span><strong>Admin User</strong><small>Administrator</small></span>}{!collapsed && <ChevronDown size={15} />}</button>{!collapsed && <button className="sign-out" onClick={() => onNavigate("/")}><LogIn size={14} />Sign out</button>}</div>
     </aside>
   );
 }
 
 function Topbar({ onImport, onNavigate }: { onImport: () => void; onNavigate: (path: string) => void }) {
+  const { theme, toggleTheme } = useTheme();
+  const nextTheme = theme === "dark" ? "light" : "dark";
   const [query, setQuery] = useState("");
-  return <header className="topbar"><button className="mobile-menu icon-button" aria-label="Open navigation" onClick={() => toast("Use the section tabs below on small screens.")}><Menu size={18} /></button><div className="breadcrumbs"><span>Workspace</span><ChevronRight size={13} /><strong>Live view</strong></div><div className="topbar__actions"><label className="signal-search"><Search size={15} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ask the signal…" /><kbd>⌘ K</kbd></label><button className="icon-button notification" aria-label="Notifications" onClick={() => toast("No new workspace alerts.")}><Bell size={17} /><i /></button><button className="button button--primary button--compact" onClick={onImport}><Plus size={15} />Import</button><button className="icon-button topbar-theme" aria-label="Switch to dark mode" onClick={() => toast("Theme controls are ready for the next release.")}><Sparkles size={16} /></button></div></header>;
+  return <header className="topbar"><button className="mobile-menu icon-button" aria-label="Open navigation" onClick={() => toast("Use the section tabs below on small screens.")}><Menu size={18} /></button><div className="breadcrumbs"><span>Workspace</span><ChevronRight size={13} /><strong>Live view</strong></div><div className="topbar__actions"><label className="signal-search"><Search size={15} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ask the signal…" /><kbd>⌘ K</kbd></label><button className="icon-button notification" aria-label="Notifications" onClick={() => toast("No new workspace alerts.")}><Bell size={17} /><i /></button><button className="button button--primary button--compact" onClick={onImport}><Plus size={15} />Import</button><button className="icon-button topbar-theme" aria-label={`Switch to ${nextTheme} mode`} title={`Switch to ${nextTheme} mode`} onClick={() => toggleTheme?.()}><Sparkles size={16} /></button></div></header>;
 }
 
 function Dashboard({ reviews, filteredReviews, products, sources, filters, setFilters, onImport, onNavigate }: { reviews: Review[]; filteredReviews: Review[]; products: string[]; sources: string[]; filters: ScopeFilters; setFilters: (next: ScopeFilters) => void; onImport: () => void; onNavigate: (path: string) => void }) {
@@ -392,7 +399,7 @@ function ScriptAnalysis({ lastAnalysis, onAnalyze, onNavigate }: { lastAnalysis:
 
 function UploadPage({ onFile, uploadStatus }: { onFile: (event: ChangeEvent<HTMLInputElement>) => void; uploadStatus: UploadStatus }) {
   const statusTone = uploadStatus.status === "complete" ? "teal" : uploadStatus.status === "error" ? "coral" : uploadStatus.status === "processing" ? "amber" : "ink";
-  return <><PageHeader eyebrow="Workspace / Ingest" title="Bring feedback into focus." description="Import CSV feedback, multi-page PDFs, or Word documents; SentimentIQ extracts text and keeps the source visible." action={<StatusPill tone={statusTone}>{uploadStatus.status === "idle" ? "0 files queued" : uploadStatus.status === "processing" ? "Processing" : uploadStatus.status === "complete" ? "Ready" : "Needs attention"}</StatusPill>} /><section className="upload-layout"><article className="card upload-card"><div className="upload-card__intro"><div><Eyebrow>Data ingest</Eyebrow><h2>Import the source once.</h2><p>SentimentIQ normalizes feedback into one review schema. The mapping step stays explicit so imported data never becomes a black box.</p></div><div className="upload-intro-side"><div className="signal-stamp" aria-hidden="true"><i /><i /><i /></div><div className="file-badges"><span>CSV</span><span>DOCX</span><span>PDF</span></div></div></div><label className="drop-zone"><input type="file" accept=".csv,.pdf,.docx,text/csv,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={onFile} /><CloudUpload size={26} /><strong>Drop a review file here</strong><span>CSV, PDF, or DOCX · up to 25 MB</span><span className="button button--secondary">Choose file</span></label>{uploadStatus.status !== "idle" && <div className={`upload-progress upload-progress--${uploadStatus.status}`}><div className="upload-progress__copy"><span>{uploadStatus.message}</span><strong>{uploadStatus.progress}%</strong></div><div className="upload-progress__track"><i style={{ width: `${uploadStatus.progress}%` }} /></div></div>}<div className="upload-notes"><div><CircleHelp size={16} /><span><strong>What happens next</strong>CSV rows are parsed from their text column; PDF and DOCX pages become text segments, then all rows are scored and saved locally.</span></div><div><ShieldCheck size={16} /><span><strong>Source stays visible</strong>Every imported row retains its original file name and the audit surface records the import.</span></div></div></article><aside className="card import-guide"><Eyebrow>Import guide</Eyebrow><h2>Make the first signal useful.</h2><div className="guide-step"><span>01</span><div><strong>Include a text column</strong><p>Use a header like review, comment, feedback, or text.</p></div></div><div className="guide-step"><span>02</span><div><strong>Add sentiment when available</strong><p>Positive, neutral, and negative labels are recognized directly.</p></div></div><div className="guide-step"><span>03</span><div><strong>Keep product and date nearby</strong><p>Optional context unlocks clearer filters and trend views.</p></div></div><div className="format-note"><Database size={15} /><span>Imported rows stay in this browser session until identity storage is connected.</span></div></aside></section></>;
+  return <><PageHeader eyebrow="Workspace / Ingest" title="Bring feedback into focus." description="Import CSV feedback, multi-page PDFs, or Word documents; INNO-Tech SentimentIQ extracts text and keeps the source visible." action={<StatusPill tone={statusTone}>{uploadStatus.status === "idle" ? "0 files queued" : uploadStatus.status === "processing" ? "Processing" : uploadStatus.status === "complete" ? "Ready" : "Needs attention"}</StatusPill>} /><section className="upload-layout"><article className="card upload-card"><div className="upload-card__intro"><div><Eyebrow>Data ingest</Eyebrow><h2>Import the source once.</h2><p>INNO-Tech SentimentIQ normalizes feedback into one review schema. The mapping step stays explicit so imported data never becomes a black box.</p></div><div className="upload-intro-side"><div className="signal-stamp" aria-hidden="true"><i /><i /><i /></div><div className="file-badges"><span>CSV</span><span>DOCX</span><span>PDF</span></div></div></div><label className="drop-zone"><input type="file" accept=".csv,.pdf,.docx,text/csv,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={onFile} /><CloudUpload size={26} /><strong>Drop a review file here</strong><span>CSV, PDF, or DOCX · up to 25 MB</span><span className="button button--secondary">Choose file</span></label>{uploadStatus.status !== "idle" && <div className={`upload-progress upload-progress--${uploadStatus.status}`}><div className="upload-progress__copy"><span>{uploadStatus.message}</span><strong>{uploadStatus.progress}%</strong></div><div className="upload-progress__track"><i style={{ width: `${uploadStatus.progress}%` }} /></div></div>}<div className="upload-notes"><div><CircleHelp size={16} /><span><strong>What happens next</strong>CSV rows are parsed from their text column; PDF and DOCX pages become text segments, then all rows are scored and saved locally.</span></div><div><ShieldCheck size={16} /><span><strong>Source stays visible</strong>Every imported row retains its original file name and the audit surface records the import.</span></div></div></article><aside className="card import-guide"><Eyebrow>Import guide</Eyebrow><h2>Make the first signal useful.</h2><div className="guide-step"><span>01</span><div><strong>Include a text column</strong><p>Use a header like review, comment, feedback, or text.</p></div></div><div className="guide-step"><span>02</span><div><strong>Add sentiment when available</strong><p>Positive, neutral, and negative labels are recognized directly.</p></div></div><div className="guide-step"><span>03</span><div><strong>Keep product and date nearby</strong><p>Optional context unlocks clearer filters and trend views.</p></div></div><div className="format-note"><Database size={15} /><span>Imported rows stay in this browser session until identity storage is connected.</span></div></aside></section></>;
 }
 
 function ReviewsPage({ reviews, filteredReviews, search, setSearch, onNavigate }: { reviews: Review[]; filteredReviews: Review[]; search: string; setSearch: (value: string) => void; onNavigate: (path: string) => void }) {
@@ -451,7 +458,7 @@ function AppShell({ onLogout }: { onLogout: () => void }) {
     const extension = file.name.toLowerCase().split(".").pop();
     const supported = ["csv", "pdf", "docx"];
     if (!extension || !supported.includes(extension)) {
-      const message = "Unsupported file type. SentimentIQ accepts CSV, PDF, or DOCX files.";
+      const message = "Unsupported file type. INNO-Tech SentimentIQ accepts CSV, PDF, or DOCX files.";
       setUploadStatus({ status: "error", progress: 0, message });
       toast.error(message);
       return;
@@ -481,7 +488,7 @@ function AppShell({ onLogout }: { onLogout: () => void }) {
       toast.error(message);
     }
   };
-  return <div className="app-shell"><Sidebar view={view} onNavigate={navigate} collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} /><div className="workspace"><Topbar onImport={handleImport} onNavigate={navigate} /><main className="workspace-main">{view === "dashboard" && <Dashboard reviews={reviews} filteredReviews={filteredReviews} products={products} sources={sources} filters={filters} setFilters={setFilters} onImport={handleImport} onNavigate={navigate} />}{view === "upload" && <UploadPage onFile={onFile} uploadStatus={uploadStatus} />}{view === "analysis" && <ScriptAnalysis lastAnalysis={lastAnalysis} onAnalyze={handleAnalyze} onNavigate={navigate} />}{view === "reviews" && <ReviewsPage reviews={reviews} filteredReviews={filteredReviews} search={search} setSearch={setSearch} onNavigate={navigate} />}{view === "reports" && <ReportsPage filteredReviews={filteredReviews} filters={filters} onImport={handleImport} />}{view === "settings" && <SettingsPage />}</main><footer className="workspace-footer"><span>SentimentIQ · private workspace</span><span>Source context stays attached</span></footer></div></div>;
+  return <div className="app-shell"><Sidebar view={view} onNavigate={navigate} collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} /><div className="workspace"><Topbar onImport={handleImport} onNavigate={navigate} /><main className="workspace-main">{view === "dashboard" && <Dashboard reviews={reviews} filteredReviews={filteredReviews} products={products} sources={sources} filters={filters} setFilters={setFilters} onImport={handleImport} onNavigate={navigate} />}{view === "upload" && <UploadPage onFile={onFile} uploadStatus={uploadStatus} />}{view === "analysis" && <ScriptAnalysis lastAnalysis={lastAnalysis} onAnalyze={handleAnalyze} onNavigate={navigate} />}{view === "reviews" && <ReviewsPage reviews={reviews} filteredReviews={filteredReviews} search={search} setSearch={setSearch} onNavigate={navigate} />}{view === "reports" && <ReportsPage filteredReviews={filteredReviews} filters={filters} onImport={handleImport} />}{view === "settings" && <SettingsPage />}</main><footer className="workspace-footer"><span>INNO-Tech SentimentIQ · private workspace</span><span>Source context stays attached</span></footer></div></div>;
 }
 
 export default function Home() {

@@ -16,3 +16,11 @@
 - [x] Ensure text-only rows receive sentiment classification.
 - [x] Verify the attached file produces positive, neutral, and negative counts.
 - [x] Run type/build checks.
+
+## Light mode and rebrand
+
+- [x] Audit current theme buttons, ThemeProvider configuration, title, logo labels, and visible SentimentIQ references.
+- [x] Enable persistent light/dark switching and update controls, labels, and accessible states.
+- [x] Add a readable light token palette without breaking the existing dark palette.
+- [x] Rename visible product metadata and copy to INNO-Tech SentimentIQ.
+- [x] Verify representative routes, responsive layout, and build checks in both themes.
