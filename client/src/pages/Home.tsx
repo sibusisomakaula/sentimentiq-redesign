@@ -94,11 +94,11 @@ const sentimentMeta = {
 } as const;
 
 const initialReviews: Review[] = [];
-const positiveWords = ["love", "great", "good", "helpful", "easy", "excellent", "happy", "resolved", "thank", "thanks", "fast", "recommend", "smooth", "clear", "improve"];
-const negativeWords = ["bad", "poor", "slow", "difficult", "broken", "angry", "frustrated", "issue", "problem", "late", "delay", "worst", "hate", "never", "disappointed", "confusing"];
+const positiveWords = ["love", "great", "good", "helpful", "easy", "excellent", "happy", "resolved", "thank", "thanks", "fast", "recommend", "smooth", "clear", "improve", "delicious", "generous", "friendly", "welcome", "lovely", "reasonable", "quality", "best", "attentive", "amazing", "beautiful", "comfortable", "fresh", "impressive", "tasty", "pleasant", "satisfactory", "well cooked"];
+const negativeWords = ["bad", "poor", "slow", "difficult", "broken", "angry", "frustrated", "issue", "problem", "late", "delay", "worst", "hate", "never", "disappointed", "confusing", "cold", "rude", "small", "noisy", "waited", "dirty", "bland", "lacked", "expensive"];
 
 function classifyText(text: string): { sentiment: Review["sentiment"]; score: number; phrases: string[] } {
-  const normalized = text.toLowerCase();
+  const normalized = text.toLowerCase().replace(/[^a-z0-9\s-]/g, " ");
   const positiveHits = positiveWords.filter((word) => normalized.includes(word)).length;
   const negativeHits = negativeWords.filter((word) => normalized.includes(word)).length;
   const score = Math.max(-100, Math.min(100, Math.round(((positiveHits - negativeHits) / Math.max(1, positiveHits + negativeHits)) * 100)));
@@ -173,13 +173,17 @@ function parseCsv(text: string, source: string): Review[] {
   };
   return lines.slice(1).map((line, index) => {
     const row = parseRow(line);
-    const rawSentiment = find(row, ["sentiment", "label", "polarity"]).toLowerCase();
-    const sentiment: Review["sentiment"] = rawSentiment.includes("neg") ? "Negative" : rawSentiment.includes("pos") ? "Positive" : "Neutral";
+    const text = find(row, ["text", "review", "comment", "feedback", "content"]);
+    const rawSentiment = find(row, ["sentiment", "label", "polarity"]).toLowerCase().trim();
+    const inferredSentiment = classifyText(text).sentiment;
+    const sentiment: Review["sentiment"] = rawSentiment
+      ? rawSentiment.includes("neg") ? "Negative" : rawSentiment.includes("pos") ? "Positive" : inferredSentiment
+      : inferredSentiment;
     const rawRating = Number(find(row, ["rating", "score", "stars"]));
     const rawDate = find(row, ["date", "created", "time", "timestamp"]);
     return {
       id: `${source}-${index}-${Date.now()}`,
-      text: find(row, ["text", "review", "comment", "feedback", "content"]),
+      text,
       sentiment,
       rating: Number.isFinite(rawRating) && rawRating > 0 ? rawRating : null,
       product: find(row, ["product", "item", "sku"]) || "Unspecified product",
